@@ -281,7 +281,7 @@ const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const K='tonnetto-v1';
 const PAL=['#e8463a','#2a78c2','#5f9a3a','#e9a320','#8a63c9','#ec6f86','#1f9e94','#64788d'];
 const DEF={
- settings:{focus:25,short:5,long:15,every:4,autoBreak:true,autoFocus:false,chime:true,vibrate:true,notify:false,wake:true,theme:'auto',goal:120,volume:.5,sound:'none',askNote:true},
+ settings:{focus:25,short:5,long:15,every:4,autoBreak:true,autoFocus:false,chime:true,vibrate:true,notify:false,wake:true,theme:'auto',goal:120,volume:.5,sound:'none',askNote:true,iosTimer:false,scName:'Tonnetto'},
  tags:[{id:'t1',name:'Lavoro',color:PAL[0]},{id:'t2',name:'Studio',color:PAL[1]},{id:'t3',name:'Lettura',color:PAL[2]},{id:'t4',name:'Scrittura',color:PAL[3]}],
  sessions:[],
  timer:{mode:'pomo',phase:'focus',running:false,endAt:0,remaining:null,planned:0,startedAt:0,acc:0,cycle:0,tag:'t1',focusStart:0}
@@ -503,6 +503,16 @@ function ask(title,msg,btns){return new Promise(res=>{
  onClose=()=>res('cancel');
  sheet.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{onClose=null;closeModal();res(b.dataset.r)});
 })}
+function runIosTimer(sec){
+ if(!S.settings.iosTimer)return;
+ const n=Math.max(1,Math.round(sec));
+ location.href='shortcuts://run-shortcut?name='+encodeURIComponent(S.settings.scName||'Tonnetto')+'&input=text&text='+n;
+}
+function startManual(){
+ const t=T(),was=t.running;start();
+ if(!was&&T().running&&T().mode==='pomo')runIosTimer(value());
+}
+function pauseManual(){pause();if(S.settings.iosTimer&&T().mode==='pomo')toast('Il timer di iOS non si ferma: annullalo da Orologio')}
 let tt;function toast(m){const e=$('#toast');e.textContent=m;e.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('on'),2200)}
 
 /* ---------- SHEETS ---------- */
@@ -688,14 +698,17 @@ function renderSettings(){
  const notifState='Notification'in window?Notification.permission:'unsupported';
  $('#v-set').innerHTML=`<h2>Impostazioni</h2>
  <div class="card">${step('focus','Durata focus')}${step('short','Pausa breve')}${step('long','Pausa lunga')}${step('every','Pausa lunga ogni','sessioni di focus')}${step('goal','Obiettivo giornaliero')}</div>
- <div class="card">${sw('autoBreak','Avvia pausa in automatico')}${sw('autoFocus','Avvia focus dopo la pausa')}${sw('chime','Suono di fine sessione')}${sw('vibrate','Vibrazione','Solo sui dispositivi che la supportano')}${sw('wake','Schermo sempre acceso','Durante il timer')}${sw('askNote','Nota a fine sessione','Scrivi com\'è andata')}
+ <div class="card">${sw('autoBreak','Avvia pausa in automatico')}${sw('autoFocus','Avvia focus dopo la pausa')}${sw('chime','Suono di fine sessione')}${sw('vibrate','Vibrazione','Solo sui dispositivi che la supportano')}${sw('wake','Schermo sempre acceso','Durante il timer')}${sw('askNote','Nota a fine sessione','Scrivi com\'è andata')}${sw('iosTimer','Avvisa con il Timer di iOS','Suona anche a telefono bloccato. Serve il comando rapido con durata in secondi')}
+  ${s.iosTimer?`<div class="set"><div style="flex:1">Nome del comando rapido<input type="text" id="scn" value="${esc(s.scName)}" style="margin-top:6px"></div><button class="chip" id="scTest">Prova 10 s</button></div>`:''}
   <div class="set"><div>Notifiche<small>${notifState==='granted'?'Attive':notifState==='denied'?'Bloccate dal browser':notifState==='unsupported'?'Su iPhone: aggiungi Tonnetto alla schermata Home':'Non ancora autorizzate'}</small></div>${notifState==='granted'?`<label class="sw"><input type="checkbox" data-sw="notify" ${s.notify?'checked':''}><span></span></label>`:notifState==='default'?'<button class="chip" id="askN">Autorizza</button>':''}</div>
   <div class="set"><div>Tema</div><div class="seg sm" id="thm">${[['auto','Auto'],['light','Chiaro'],['dark','Scuro']].map(([k,l])=>`<button data-t="${k}" class="${s.theme===k?'on':''}">${l}</button>`).join('')}</div></div>
  </div>
  <div class="card"><h3>Dati</h3><p class="mut" style="font-size:13px;margin:0 0 6px">Restano solo in questo browser. Esporta per fare un backup o spostarli su un altro dispositivo.</p><div class="btns" style="margin-top:8px"><button class="btn" id="exp">Esporta</button><button class="btn" id="imp">Importa</button><button class="btn dan" id="wipe">Azzera</button></div></div>
  <p class="mut" style="text-align:center;font-size:12px">Tonnetto · tutte le funzioni incluse, nessun abbonamento</p>`;
  $$('[data-st]').forEach(b=>b.onclick=()=>{const k=b.dataset.st,[mn,mx,st]=STEPS[k];s[k]=Math.min(mx,Math.max(mn,s[k]+st*+b.dataset.d));save();renderSettings();render()});
- $$('[data-sw]').forEach(i=>i.onchange=()=>{s[i.dataset.sw]=i.checked;save();if(i.dataset.sw==='wake'){i.checked&&T().running?wakeOn():wakeOff()}});
+ $$('[data-sw]').forEach(i=>i.onchange=()=>{s[i.dataset.sw]=i.checked;save();if(i.dataset.sw==='wake'){i.checked&&T().running?wakeOn():wakeOff()}if(i.dataset.sw==='iosTimer')renderSettings()});
+ const scn=$('#scn');if(scn)scn.onchange=()=>{s.scName=scn.value.trim()||'Tonnetto';save()};
+ const sct=$('#scTest');if(sct)sct.onclick=()=>runIosTimer(10);
  $$('#thm button').forEach(b=>b.onclick=()=>{s.theme=b.dataset.t;save();applyTheme();renderSettings()});
  const an=$('#askN');if(an)an.onclick=async()=>{try{const p=await Notification.requestPermission();if(p==='granted'){s.notify=true;save()}}catch(e){}renderSettings()};
  $('#exp').onclick=()=>{const j=JSON.stringify({tags:S.tags,sessions:S.sessions,settings:S.settings});openModal(`<h3>Esporta dati</h3><textarea readonly id="ej">${esc(j)}</textarea><div class="btns"><button class="btn pri" id="cp">Copia</button><button class="btn" id="cl">Chiudi</button></div>`);$('#cl').onclick=closeModal;$('#cp').onclick=()=>{navigator.clipboard.writeText(j).then(()=>toast('Copiato'),()=>{$('#ej').select();toast('Seleziona e copia a mano')})}};
@@ -781,8 +794,8 @@ canEl.addEventListener('pointermove',e=>{
 });
 function endDrag(){
  if(!drag)return;const acc=drag.acc,t=T();drag=null;canEl.classList.remove('grab');
- if(acc>=24&&!t.running){pop();S.settings.pulled=true;start()}
- else if(acc<=-24&&t.running){pause();toast('In pausa')}
+ if(acc>=24&&!t.running){pop();S.settings.pulled=true;startManual()}
+ else if(acc<=-24&&t.running){pauseManual();if(!S.settings.iosTimer)toast('In pausa')}
  const from=lastG,t0=performance.now();
  const step=now=>{const k=Math.min(1,(now-t0)/650),q=1-Math.pow(1-k,3);drawCan(from+(targetG-from)*q);anim=k<1?requestAnimationFrame(step):null};
  anim=requestAnimationFrame(step);
@@ -790,7 +803,7 @@ function endDrag(){
 canEl.addEventListener('pointerup',endDrag);canEl.addEventListener('pointercancel',endDrag);
 
 
-$('#mainBtn').onclick=()=>T().running?pause():start();
+$('#mainBtn').onclick=()=>T().running?pauseManual():startManual();
 $('#skipBtn').onclick=skip;
 $('#resetBtn').onclick=resetFlow;
 $('#tagBtn').onclick=tagSheet;
