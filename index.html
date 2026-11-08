@@ -191,6 +191,12 @@ main{position:relative;touch-action:pan-y pinch-zoom}
 html,body{overflow-x:hidden}
 .view.peek{display:block;position:absolute;left:18px;right:18px;pointer-events:none;will-change:transform}
 .view.on{will-change:auto}
+.zen-only{display:none}body.zen .zen-only{display:flex}
+.blackout{position:fixed;inset:0;background:#000;z-index:60;display:none;flex-direction:column;align-items:center;justify-content:center;touch-action:none;cursor:none;-webkit-user-select:none;user-select:none}
+.blackout.on{display:flex}
+#boTime{color:#6b1d16;font-size:64px;font-weight:800;font-variant-numeric:tabular-nums;opacity:0;transition:opacity .5s}
+#boHint{color:#3a3a3a;font-size:14px;margin:6px 0 0;opacity:0;transition:opacity .5s}
+.blackout.peek #boTime,.blackout.peek #boHint{opacity:1}
 @media (orientation:landscape) and (max-height:560px){
  main{padding-top:8px;padding-bottom:84px}
  .stage{flex-direction:row;justify-content:center;gap:44px;margin-top:6px}
@@ -251,6 +257,7 @@ html,body{overflow-x:hidden}
     <div class="row2">
      <button id="soundBtn" class="chip hide-zen">🎧 <span>Silenzio</span></button>
      <button id="zenBtn" class="chip">🎯 <span>Modalità focus</span></button>
+     <button id="blackBtn" class="chip zen-only">⬛ <span>Schermo nero</span></button>
     </div>
     <div id="todayLine" class="today"></div>
    </div>
@@ -274,6 +281,7 @@ html,body{overflow-x:hidden}
 
 <div id="modal" class="modal"><div class="sheet" id="sheet"></div></div>
 <div id="toast"></div>
+<div id="blackout" class="blackout" aria-label="Schermo nero: doppio tocco per uscire"><div id="boTime"></div><p id="boHint">Doppio tocco per uscire</p></div>
 
 <script>
 (()=>{
@@ -341,7 +349,7 @@ function record(sec,abandoned){
 }
 function complete(silent){
  const t=T();const prev=t.phase;t.running=false;let ses=null;
- if(prev==='focus'){ses=record(t.planned||phaseDur('focus'));t.cycle++}
+ if(prev==='focus'){ses=record(t.planned||phaseDur('focus'));t.cycle++;if(!silent)blackOff()}
  setPhase(prev==='focus'?nextAfterFocus():'focus');
  if(!silent){alertEnd(prev);if(!(ses&&S.settings.askNote))toast(prev==='focus'?'Scatoletta aperta! 🐟':'Pausa finita, si riparte')}
  const auto=t.phase==='focus'?S.settings.autoFocus:S.settings.autoBreak;
@@ -440,8 +448,9 @@ function alertEnd(prev){
  }
 }
 let wl=null;
-async function wakeOn(){if(!S.settings.wake||!('wakeLock'in navigator)||wl)return;try{wl=await navigator.wakeLock.request('screen');wl.addEventListener('release',()=>wl=null)}catch(e){}}
-function wakeOff(){if(wl){wl.release().catch(()=>{});wl=null}}
+async function wakeOn(force){if((!S.settings.wake&&!force&&!isBlack())||!('wakeLock'in navigator)||wl)return;try{wl=await navigator.wakeLock.request('screen');wl.addEventListener('release',()=>wl=null)}catch(e){}}
+function isBlack(){const b=document.getElementById('blackout');return!!b&&b.classList.contains('on')}
+function wakeOff(){if(isBlack())return;if(wl){wl.release().catch(()=>{});wl=null}}
 
 /* ---------- UI: TIMER ---------- */
 const ICON={
@@ -471,6 +480,7 @@ function tick(){
  else{const tot=t.planned||phaseDur(t.phase);p=1-v/tot}
  const g=t.mode==='watch'?(v%3600)/3600:t.phase==='focus'?p:1-p;
  targetG=Math.max(0,Math.min(1,g));if(!drag&&!anim)drawCan(targetG);
+ if(isBlack())$('#boTime').textContent=fmt(v,t.mode==='watch');
  document.title=t.running?fmt(v,t.mode==='watch')+' · '+(t.mode==='watch'?'Cronometro':PH[t.phase]):'Tonnetto · Timer di focus';
 }
 function render(){
@@ -751,7 +761,7 @@ function swPos(d,anim){
 }
 document.addEventListener('touchstart',e=>{
  if(sw&&sw.busy)return;const t=e.touches[0];
- if(e.touches.length!==1||modal.classList.contains('on')||t.clientX<18||t.clientX>innerWidth-18||e.target.closest('.canwrap,input,select,textarea,nav')){sw=null;return}
+ if(e.touches.length!==1||modal.classList.contains('on')||t.clientX<18||t.clientX>innerWidth-18||e.target.closest('.canwrap,input,select,textarea,nav,.blackout')){sw=null;return}
  sw={x:t.clientX,y:t.clientY,t:Date.now(),lock:0,dx:0,lastX:t.clientX,lastT:Date.now(),vx:0};
 },{passive:true});
 document.addEventListener('touchmove',e=>{
@@ -812,7 +822,14 @@ $('#zenBtn').onclick=()=>{document.body.classList.toggle('zen');$('#zenBtn span'
 $$('#modeSeg button').forEach(b=>b.onclick=()=>{const t=T();if(b.dataset.mode===t.mode)return;if(t.running||focusElapsed()>0){toast('Interrompi prima la sessione in corso');return}t.mode=b.dataset.mode;t.acc=0;setPhase('focus');save();render()});
 $$('#phases button').forEach(b=>b.onclick=()=>{const t=T();if(b.dataset.p===t.phase)return;if(t.running){toast('Metti in pausa per cambiare fase');return}setPhase(b.dataset.p);save();render()});
 document.addEventListener('keydown',e=>{if(e.target.matches('input,textarea,select'))return;if(e.code==='Space'){e.preventDefault();T().running?pause():start()}});
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){tick();if(T().running)wakeOn()}else save()});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){tick();if(T().running||isBlack())wakeOn(true)}else save()});
+/* schermo nero */
+let boT=null,lastTap=0;
+function boPeek(){const b=$('#blackout');b.classList.add('peek');clearTimeout(boT);boT=setTimeout(()=>b.classList.remove('peek'),2500)}
+function blackOn(){$('#blackout').classList.add('on');document.querySelector('meta[name=theme-color]').content='#000000';tick();boPeek();wakeOn(true)}
+function blackOff(){const b=$('#blackout');if(!b.classList.contains('on'))return;b.classList.remove('on','peek');applyTheme();if(!T().running)wakeOff()}
+$('#blackout').addEventListener('pointerup',e=>{e.preventDefault();const n=Date.now();if(n-lastTap<380){lastTap=0;blackOff();return}lastTap=n;boPeek()});
+$('#blackBtn').onclick=blackOn;
 document.addEventListener('pointerdown',()=>{if(T().running&&!amb){ensureAudio();playAmbient()}},{once:true});
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',applyTheme);
 
