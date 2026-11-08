@@ -396,20 +396,34 @@ function noise(kind){
  for(let i=0;i<f;i++){const a=i/f;d[i]=d[i]*a+d[len-f+i]*(1-a)}
  return bufs[kind]=b;
 }
-const SOUNDS=[['none','🔇','Silenzio'],['white','🌫️','Bianco'],['pink','🌸','Rosa'],['brown','🟫','Marrone'],['rain','🌧️','Pioggia'],['ocean','🌊','Oceano']];
+const SOUNDS=[['none','🔇','Silenzio'],['white','🌫️','Bianco'],['pink','🌸','Rosa'],['brown','🟫','Marrone'],['rain','🌧️','Pioggia'],['ocean','🌊','Oceano'],['om','🧘','Om yoga']];
 function playAmbient(){
  stopAmbient();const k=S.settings.sound,t=T();
  if(k==='none'||!AC||!t.running||(t.mode==='pomo'&&t.phase!=='focus'))return;
- const nodes=[],out=AC.createGain();out.gain.value=0;out.connect(master);
+ const nodes=[],out=AC.createGain();out.gain.value=0;out.connect(master);let timer=null;
  const src=kind=>{const s=AC.createBufferSource();s.buffer=noise(kind);s.loop=true;s.start();nodes.push(s);return s};
  if(k==='rain'){const a=src('pink'),f=AC.createBiquadFilter();f.type='highpass';f.frequency.value=900;a.connect(f);f.connect(out);const g=AC.createGain();g.gain.value=.45;src('brown').connect(g);g.connect(out)}
  else if(k==='ocean'){const g=AC.createGain();g.gain.value=.55;const lfo=AC.createOscillator(),lg=AC.createGain();lfo.frequency.value=.09;lg.gain.value=.45;lfo.connect(lg);lg.connect(g.gain);lfo.start();nodes.push(lfo);src('brown').connect(g);g.connect(out)}
+ else if(k==='om'){
+  const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=900;lp.connect(out);
+  const dr=AC.createGain();dr.gain.value=.6;dr.connect(lp);
+  const lfo=AC.createOscillator(),lg=AC.createGain();lfo.frequency.value=.1;lg.gain.value=.3;lfo.connect(lg);lg.connect(dr.gain);lfo.start();nodes.push(lfo);
+  [[1,.42,-4],[1,.3,4],[2,.16,0],[3,.07,2],[1.5,.05,0],[.5,.18,0]].forEach(([m,a,dt])=>{const o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.value=136.1*m;o.detune.value=dt;g.gain.value=a;o.connect(g);g.connect(dr);o.start();nodes.push(o)});
+  timer=setTimeout(function ring(){bell(out);timer=setTimeout(ring,60000);if(amb)amb.timer=timer},900);
+ }
  else src(k).connect(out);
  out.gain.linearRampToValueAtTime(S.settings.volume,AC.currentTime+1.5);
- amb={nodes,out};
+ amb={nodes,out,timer};
+}
+function bell(dest){
+ if(!AC)return;const t0=AC.currentTime;
+ [[1318.5,0,.5],[1760,.32,.32]].forEach(([f,off,amp])=>[[1,1,4.5],[2.76,.45,2.6],[5.4,.2,1.5],[8.93,.08,.9]].forEach(([m,a,d])=>{
+  const o=AC.createOscillator(),g=AC.createGain(),t=t0+off;o.type='sine';o.frequency.value=f*m;
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(a*amp*.35,t+.006);g.gain.exponentialRampToValueAtTime(.0001,t+d);
+  o.connect(g);g.connect(dest);o.start(t);o.stop(t+d+.05)}));
 }
 function stopAmbient(){
- if(!amb)return;const a=amb;amb=null;
+ if(!amb)return;const a=amb;amb=null;clearTimeout(a.timer);
  try{const n=AC.currentTime;a.out.gain.cancelScheduledValues(n);a.out.gain.setValueAtTime(a.out.gain.value,n);a.out.gain.linearRampToValueAtTime(0,n+.4)}catch(e){}
  setTimeout(()=>{a.nodes.forEach(x=>{try{x.stop()}catch(e){}});try{a.out.disconnect()}catch(e){}},500);
 }
@@ -500,7 +514,7 @@ function tagSheet(){
 }
 function soundSheet(){
  const draw=()=>{
-  openModal(`<h3>Suono ambientale</h3><p class="mut" style="margin:0;font-size:14px">Suona durante il focus, si ferma in pausa.</p><div class="grid3">${SOUNDS.map(([k,e,l])=>`<button data-k="${k}" class="${S.settings.sound===k?'on':''}"><em>${e}</em>${l}</button>`).join('')}</div><div class="field"><label>Volume</label><input type="range" id="vol" min="0" max="1" step="0.05" value="${S.settings.volume}"></div><button class="btn" id="prev" style="width:100%">Ascolta anteprima (3 s)</button>`);
+  openModal(`<h3>Suono ambientale</h3><p class="mut" style="margin:0;font-size:14px">Suona durante il focus, si ferma in pausa. Om yoga: campanella a ogni minuto.</p><div class="grid3">${SOUNDS.map(([k,e,l])=>`<button data-k="${k}" class="${S.settings.sound===k?'on':''}"><em>${e}</em>${l}</button>`).join('')}</div><div class="field"><label>Volume</label><input type="range" id="vol" min="0" max="1" step="0.05" value="${S.settings.volume}"></div><button class="btn" id="prev" style="width:100%">Ascolta anteprima (3 s)</button>`);
   sheet.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{S.settings.sound=b.dataset.k;save();ensureAudio();if(T().running)playAmbient();draw();render()});
   $('#vol').oninput=e=>{S.settings.volume=+e.target.value;save();if(amb)amb.out.gain.value=S.settings.volume};
   $('#prev').onclick=()=>{ensureAudio();const k=S.settings.sound;if(k==='none'||!AC)return;const t=T(),was=t.running,ph=t.phase,md=t.mode;t.running=true;t.mode='watch';playAmbient();t.running=was;t.phase=ph;t.mode=md;setTimeout(()=>{if(!(T().running&&(T().mode==='watch'||T().phase==='focus')))stopAmbient()},3000)};
