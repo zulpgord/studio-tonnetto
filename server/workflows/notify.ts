@@ -29,8 +29,11 @@ async function sendPush(sub: Sub, a: Alert) {
       topic: "tonnetto",
     });
   } catch (e: any) {
-    // Iscrizione scaduta o revocata: inutile riprovare.
-    if (e?.statusCode === 404 || e?.statusCode === 410) throw new FatalError("subscription gone");
-    throw e;
+    // Gli errori di web-push non sono serializzabili: li trasformo in messaggi semplici.
+    const code = Number(e?.statusCode) || 0;
+    const msg = `push ${code || "network"}: ${String(e?.body || e?.message || "").slice(0, 200)}`;
+    // 4xx (iscrizione scaduta, revocata o non valida): inutile riprovare.
+    if (code >= 400 && code < 500 && code !== 429) throw new FatalError(msg);
+    throw new Error(msg);
   }
 }
