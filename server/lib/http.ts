@@ -5,7 +5,7 @@ export function cors(req: Request): Record<string, string> {
   const origin = req.headers.get("origin") ?? "";
   return {
     "Access-Control-Allow-Origin": ALLOWED.includes(origin) ? origin : ALLOWED[0],
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Max-Age": "86400",
     Vary: "Origin",

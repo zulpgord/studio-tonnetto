@@ -1,5 +1,6 @@
 import { sleep, FatalError } from "workflow";
 import webpush from "web-push";
+import { VAPID_PUBLIC, VAPID_PRIVATE } from "@/lib/vapid";
 
 export type Alert = { at: number; title: string; body: string };
 type Sub = { endpoint: string; keys: { p256dh: string; auth: string } };
@@ -18,8 +19,8 @@ async function sendPush(sub: Sub, a: Alert) {
   "use step";
   webpush.setVapidDetails(
     process.env.VAPID_SUBJECT || "mailto:tonnetto@example.com",
-    process.env.VAPID_PUBLIC_KEY!,
-    process.env.VAPID_PRIVATE_KEY!,
+    VAPID_PUBLIC,
+    VAPID_PRIVATE,
   );
   try {
     await webpush.sendNotification(sub, JSON.stringify({ title: a.title, body: a.body }), {

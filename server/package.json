@@ -2,7 +2,7 @@
   "name": "tonnetto-push",
   "private": true,
   "version": "1.0.0",
-  "scripts": { "dev": "next dev", "build": "next build", "start": "next start" },
+  "scripts": { "dev": "next dev", "prebuild": "node scripts/gen-vapid.mjs", "build": "next build", "start": "next start" },
   "dependencies": {
     "next": "^15.5.0",
     "react": "^19.0.0",
