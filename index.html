@@ -289,7 +289,7 @@ const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const K='tonnetto-v1';
 const PAL=['#e8463a','#2a78c2','#5f9a3a','#e9a320','#8a63c9','#ec6f86','#1f9e94','#64788d'];
 const DEF={
- settings:{focus:25,short:5,long:15,every:4,autoBreak:true,autoFocus:false,chime:true,vibrate:true,notify:false,wake:true,theme:'auto',goal:120,volume:.5,sound:'none',askNote:true,iosTimer:false,scName:'Tonnetto'},
+ settings:{focus:25,short:5,long:15,every:4,autoBreak:true,autoFocus:false,chime:true,vibrate:true,notify:false,wake:true,theme:'auto',goal:120,volume:.5,sound:'none',askNote:true,iosTimer:false,scName:'Tonnetto',pushOn:false,pushSub:null,pushRun:null,pushKey:null},
  tags:[{id:'t1',name:'Lavoro',color:PAL[0]},{id:'t2',name:'Studio',color:PAL[1]},{id:'t3',name:'Lettura',color:PAL[2]},{id:'t4',name:'Scrittura',color:PAL[3]}],
  sessions:[],
  timer:{mode:'pomo',phase:'focus',running:false,endAt:0,remaining:null,planned:0,startedAt:0,acc:0,cycle:0,tag:'t1',focusStart:0}
@@ -300,7 +300,7 @@ function load(){
  try{const r=localStorage.getItem(K);if(r){const o=JSON.parse(r);S={...clone(DEF),...o,settings:{...DEF.settings,...o.settings},timer:{...DEF.timer,...o.timer}};return}}catch(e){}
  S=clone(DEF);
 }
-function save(){try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}}
+function save(){try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}if(typeof queueSync==='function')queueSync()}
 const uid=()=>Math.random().toString(36).slice(2,9);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pad=n=>String(n).padStart(2,'0');
@@ -347,12 +347,17 @@ function record(sec,abandoned){
  const t=T(),o={id:uid(),start:t.focusStart||Date.now()-sec*1000,end:Date.now(),dur:Math.round(sec),tag:t.tag,note:'',abandoned:!!abandoned};
  S.sessions.push(o);return o;
 }
-function complete(silent){
+function complete(silent,at){
  const t=T();const prev=t.phase;t.running=false;let ses=null;
  if(prev==='focus'){ses=record(t.planned||phaseDur('focus'));t.cycle++;if(!silent)blackOff()}
  setPhase(prev==='focus'?nextAfterFocus():'focus');
  if(!silent){alertEnd(prev);if(!(ses&&S.settings.askNote))toast(prev==='focus'?'Scatoletta aperta! 🐟':'Pausa finita, si riparte')}
  const auto=t.phase==='focus'?S.settings.autoFocus:S.settings.autoBreak;
+ if(auto&&silent&&at){ // recupero: la fase successiva era partita con l'app chiusa
+  t.planned=phaseDur(t.phase);t.remaining=t.planned;t.endAt=at+t.planned*1000;t.running=true;if(t.phase==='focus')t.focusStart=at;
+  if(t.endAt<=Date.now()){complete(true,t.endAt);return}
+  save();render();return;
+ }
  save();
  if(auto&&!silent)start();else{stopAmbient();wakeOff();render()}
  if(!silent)noteSheet(ses);
@@ -444,7 +449,7 @@ function chime(){
 function alertEnd(prev){
  if(S.settings.chime)chime();
  if(S.settings.vibrate&&navigator.vibrate)try{navigator.vibrate([220,120,220])}catch(e){}
- if(S.settings.notify&&'Notification'in window&&Notification.permission==='granted'){
+ if(S.settings.notify&&!S.settings.pushOn&&'Notification'in window&&Notification.permission==='granted'){
   const ti=prev==='focus'?'Focus completato 🐟':'Pausa terminata',op={body:prev==='focus'?'Tempo di una pausa.':'Pronto per il prossimo focus?',icon:'icon-512.png',badge:'icon-180.png',tag:'tonnetto'};
   if(navigator.serviceWorker&&navigator.serviceWorker.controller)navigator.serviceWorker.ready.then(r=>r.showNotification(ti,op)).catch(()=>{});else try{new Notification(ti,op)}catch(e){}
  }
@@ -474,7 +479,7 @@ function drawCan(g){
 }
 function tick(){
  const t=T();
- if(t.running&&t.mode==='pomo'&&t.endAt<=Date.now()){complete(false);return}
+ if(t.running&&t.mode==='pomo'&&t.endAt<=Date.now()){if(Date.now()-t.endAt>4000)complete(true,t.endAt);else complete(false);return}
  const v=value();
  $('#time').textContent=fmt(v,t.mode==='watch');
  let p;
@@ -515,6 +520,61 @@ function ask(title,msg,btns){return new Promise(res=>{
  onClose=()=>res('cancel');
  sheet.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{onClose=null;closeModal();res(b.dataset.r)});
 })}
+/* ---------- PUSH DAL SERVER ---------- */
+const PUSH_API='https://tonnetto-push.vercel.app';
+async function serverKey(){const r=await fetch(PUSH_API+'/api/key',{cache:'no-store'});if(!r.ok)throw 0;return (await r.json()).publicKey}
+function b64u(s){const p='='.repeat((4-s.length%4)%4),b=atob((s+p).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from(b,c=>c.charCodeAt(0))}
+function buildAlerts(){
+ const t=T();if(!t.running||t.mode!=='pomo')return[];
+ const a=[],fin={title:'Focus completato 🐟',body:'Tempo di una pausa.'},pau={title:'Pausa finita',body:'Pronto per il prossimo focus?'};let at=t.endAt;
+ if(t.phase==='focus'){const nb=(t.cycle+1)%S.settings.every===0?'long':'short';a.push({at,title:fin.title,body:S.settings.autoBreak?PH[nb]+' iniziata: '+S.settings[nb]+' min.':fin.body});if(S.settings.autoBreak){at+=phaseDur(nb)*1000;a.push({at,...pau})}}
+ else{a.push({at,...pau});if(S.settings.autoFocus){at+=phaseDur('focus')*1000;a.push({at,...fin})}}
+ return a;
+}
+let syncT=null,lastSig=null;
+function queueSync(){clearTimeout(syncT);syncT=setTimeout(syncPush,250)}
+function saveQuiet(){try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}}
+function postJ(path,body){return fetch(PUSH_API+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})}
+async function syncPush(){
+ const s=S.settings;if(!s.pushOn||!s.pushSub)return;
+ const alerts=buildAlerts(),sig=JSON.stringify(alerts.map(x=>Math.round(x.at/1000)));
+ if(sig===lastSig)return;lastSig=sig;
+ try{
+  if(!alerts.length){if(s.pushRun){const id=s.pushRun;s.pushRun=null;saveQuiet();await postJ('/api/cancel',{runId:id})}return}
+  const r=await postJ('/api/schedule',{subscription:s.pushSub,alerts,replace:s.pushRun});
+  const j=await r.json();if(!r.ok)throw new Error(j.error||r.status);s.pushRun=j.runId;saveQuiet();
+ }catch(e){lastSig=null;toast('Avvisi: server non raggiungibile')}
+}
+async function subscribeWith(key){
+ const reg=await navigator.serviceWorker.register('sw.js');await navigator.serviceWorker.ready;
+ let sub=await reg.pushManager.getSubscription();
+ if(sub&&S.settings.pushKey!==key){try{await sub.unsubscribe()}catch(e){}sub=null}
+ if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(key)});
+ S.settings.pushSub=sub.toJSON();S.settings.pushKey=key;
+}
+// Se il server ha cambiato chiave (nuova pubblicazione), rinnova l'iscrizione da solo.
+async function checkPushKey(){
+ if(!S.settings.pushOn)return;
+ try{const key=await serverKey();if(key===S.settings.pushKey)return;await subscribeWith(key);lastSig=null;save()}
+ catch(e){if(S.settings.pushKey){S.settings.pushOn=false;save();toast('Riattiva gli avvisi in Opzioni')}}
+}
+async function enablePush(){
+ if(!('serviceWorker'in navigator)||!('PushManager'in window)){toast(/iPhone|iPad/.test(navigator.userAgent)?'Apri Tonnetto dalla schermata Home':'Questo browser non supporta gli avvisi');return false}
+ try{
+  const p=await Notification.requestPermission();if(p!=='granted'){toast('Notifiche non autorizzate');return false}
+  await subscribeWith(await serverKey());
+  S.settings.pushOn=true;lastSig=null;save();return true;
+ }catch(e){toast('Attivazione non riuscita');return false}
+}
+function disablePush(){
+ const s=S.settings;s.pushOn=false;
+ if(s.pushRun){postJ('/api/cancel',{runId:s.pushRun}).catch(()=>{});s.pushRun=null}
+ lastSig=null;save();
+}
+async function testPush(){
+ const s=S.settings;if(!s.pushSub)return;
+ try{const r=await postJ('/api/schedule',{subscription:s.pushSub,alerts:[{at:Date.now()+10000,title:'Prova Tonnetto 🐟',body:'Gli avvisi a telefono bloccato funzionano.'}]});if(!r.ok)throw 0;toast('Arriva tra 10 s: blocca pure il telefono')}catch(e){toast('Server non raggiungibile')}
+}
 function runIosTimer(sec){
  if(!S.settings.iosTimer)return;
  const n=Math.max(1,Math.round(sec));
@@ -710,7 +770,7 @@ function renderSettings(){
  const notifState='Notification'in window?Notification.permission:'unsupported';
  $('#v-set').innerHTML=`<h2>Impostazioni</h2>
  <div class="card">${step('focus','Durata focus')}${step('short','Pausa breve')}${step('long','Pausa lunga')}${step('every','Pausa lunga ogni','sessioni di focus')}${step('goal','Obiettivo giornaliero')}</div>
- <div class="card">${sw('autoBreak','Avvia pausa in automatico')}${sw('autoFocus','Avvia focus dopo la pausa')}${sw('chime','Suono di fine sessione')}${sw('vibrate','Vibrazione','Solo sui dispositivi che la supportano')}${sw('wake','Schermo sempre acceso','Durante il timer')}${sw('askNote','Nota a fine sessione','Scrivi com\'è andata')}${sw('iosTimer','Avvisa con il Timer di iOS','Suona anche a telefono bloccato. Serve il comando rapido con durata in secondi')}
+ <div class="card">${sw('autoBreak','Avvia pausa in automatico')}${sw('autoFocus','Avvia focus dopo la pausa')}${sw('chime','Suono di fine sessione')}${sw('vibrate','Vibrazione','Solo sui dispositivi che la supportano')}${sw('wake','Schermo sempre acceso','Durante il timer')}${sw('askNote','Nota a fine sessione','Scrivi com\'è andata')}<div class="set"><div>Avvisi a telefono bloccato<small>Fine focus e fine pausa, anche con l'app chiusa, senza uscire dall'app</small></div><label class="sw"><input type="checkbox" id="pushSw" ${s.pushOn?'checked':''}><span></span></label></div>${s.pushOn?'<div class="set"><div>Prova gli avvisi<small>Arriva una notifica tra 10 secondi</small></div><button class="chip" id="pushTest">Prova</button></div>':''}${sw('iosTimer','Avvisa con il Timer di iOS','Suona anche a telefono bloccato. Serve il comando rapido con durata in secondi')}
   ${s.iosTimer?`<div class="set"><div style="flex:1">Nome del comando rapido<input type="text" id="scn" value="${esc(s.scName)}" style="margin-top:6px"></div><button class="chip" id="scTest">Prova 10 s</button></div>`:''}
   <div class="set"><div>Notifiche<small>${notifState==='granted'?'Attive':notifState==='denied'?'Bloccate dal browser':notifState==='unsupported'?'Su iPhone: aggiungi Tonnetto alla schermata Home':'Non ancora autorizzate'}</small></div>${notifState==='granted'?`<label class="sw"><input type="checkbox" data-sw="notify" ${s.notify?'checked':''}><span></span></label>`:notifState==='default'?'<button class="chip" id="askN">Autorizza</button>':''}</div>
   <div class="set"><div>Tema</div><div class="seg sm" id="thm">${[['auto','Auto'],['light','Chiaro'],['dark','Scuro']].map(([k,l])=>`<button data-t="${k}" class="${s.theme===k?'on':''}">${l}</button>`).join('')}</div></div>
@@ -721,6 +781,8 @@ function renderSettings(){
  $$('[data-sw]').forEach(i=>i.onchange=()=>{s[i.dataset.sw]=i.checked;save();if(i.dataset.sw==='wake'){i.checked&&T().running?wakeOn():wakeOff()}if(i.dataset.sw==='iosTimer')renderSettings()});
  const scn=$('#scn');if(scn)scn.onchange=()=>{s.scName=scn.value.trim()||'Tonnetto';save()};
  const sct=$('#scTest');if(sct)sct.onclick=()=>runIosTimer(10);
+ const psw=$('#pushSw');if(psw)psw.onchange=async()=>{if(psw.checked){const ok=await enablePush();if(!ok)psw.checked=false;else toast('Avvisi attivi')}else disablePush();renderSettings()};
+ const pt=$('#pushTest');if(pt)pt.onclick=testPush;
  $$('#thm button').forEach(b=>b.onclick=()=>{s.theme=b.dataset.t;save();applyTheme();renderSettings()});
  const an=$('#askN');if(an)an.onclick=async()=>{try{const p=await Notification.requestPermission();if(p==='granted'){s.notify=true;save()}}catch(e){}renderSettings()};
  $('#exp').onclick=()=>{const j=JSON.stringify({tags:S.tags,sessions:S.sessions,settings:S.settings});openModal(`<h3>Esporta dati</h3><textarea readonly id="ej">${esc(j)}</textarea><div class="btns"><button class="btn pri" id="cp">Copia</button><button class="btn" id="cl">Chiudi</button></div>`);$('#cl').onclick=closeModal;$('#cp').onclick=()=>{navigator.clipboard.writeText(j).then(()=>toast('Copiato'),()=>{$('#ej').select();toast('Seleziona e copia a mano')})}};
@@ -836,10 +898,11 @@ document.addEventListener('pointerdown',()=>{if(T().running&&!amb){ensureAudio()
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',applyTheme);
 
 load();applyTheme();
-if(T().running&&T().mode==='pomo'&&T().endAt<=Date.now())complete(true);
+if(T().running&&T().mode==='pomo'&&T().endAt<=Date.now())complete(true,T().endAt);
 render();
 setInterval(tick,250);
 if('serviceWorker'in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+checkPushKey();
 setInterval(()=>{if($('#v-cal').classList.contains('on')&&!modal.classList.contains('on'))renderCal()},60000);
 })();
 </script>

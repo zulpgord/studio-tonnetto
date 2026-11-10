@@ -1,5 +1,5 @@
 // Tonnetto service worker: funziona offline dopo la prima apertura.
-const CACHE = 'tonnetto-v1';
+const CACHE = 'tonnetto-v2';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-180.png', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -43,5 +43,14 @@ self.addEventListener('notificationclick', e => {
   e.waitUntil(self.clients.matchAll({ type: 'window' }).then(list => {
     for (const c of list) if ('focus' in c) return c.focus();
     return self.clients.openWindow('./');
+  }));
+});
+
+// Avvisi dal server: arrivano anche con l'app chiusa o il telefono bloccato.
+self.addEventListener('push', e => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (_) { d = { body: e.data ? e.data.text() : '' }; }
+  e.waitUntil(self.registration.showNotification(d.title || 'Tonnetto', {
+    body: d.body || '', icon: 'icon-512.png', badge: 'icon-180.png', tag: 'tonnetto', renotify: true
   }));
 });
