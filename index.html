@@ -250,7 +250,7 @@ html,body{overflow-x:hidden}
     <div id="dots" class="dots"></div>
     <div id="hint" class="hint">Tira giù la linguetta per aprire la scatoletta</div>
     <div class="ctrls">
-     <button id="resetBtn" class="ic" aria-label="Interrompi"><svg viewBox="0 0 24 24"><path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg></button>
+     <button id="resetBtn" class="ic" aria-label="Ricomincia da zero" title="Ricomincia da zero"><svg viewBox="0 0 24 24"><path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg></button>
      <button id="mainBtn" class="play" aria-label="Avvia"></button>
      <button id="skipBtn" class="ic" aria-label="Salta"></button>
     </div>
@@ -373,7 +373,8 @@ function finishWatch(){
 }
 async function resetFlow(){
  const t=T();const el=focusElapsed();
- if(el<1&&!t.running&&t.remaining==null&&t.mode==='pomo')return;
+ const fresh=t.mode==='pomo'?(!t.running&&t.remaining==null&&t.phase==='focus'&&t.cycle===0):(!t.running&&t.acc<1);
+ if(fresh){toast('Sei già all\'inizio');return}
  if(el>=60){
   const wasRunning=t.running;
   const v=await ask('Interrompere la sessione?','Hai già '+fmtMin(Math.round(el/60))+' di focus.',[['save','Salva come interrotta','pri'],['discard','Scarta','dan'],['cancel','Continua']]);
@@ -382,8 +383,9 @@ async function resetFlow(){
   if(wasRunning&&!t.running)return; // stato cambiato nel frattempo
  }
  if(t.running){t.running=false;stopAmbient();wakeOff()}
- if(t.mode==='watch'){t.acc=0;t.focusStart=0}else setPhase(t.phase);
+ if(t.mode==='watch'){t.acc=0;t.focusStart=0}else{t.cycle=0;setPhase('focus')}
  save();render();
+ toast(S.settings.iosTimer?'Ripartito da zero. Il timer di iOS va annullato a mano':'Ripartito da zero');
 }
 
 /* ---------- ALERTS ---------- */
