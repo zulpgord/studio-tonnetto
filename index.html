@@ -394,7 +394,7 @@ async function resetFlow(){
  if(t.running){t.running=false;stopAmbient();wakeOff()}
  if(t.mode==='watch'){t.acc=0;t.focusStart=0}else{t.cycle=0;t.task='';setPhase('focus')}
  save();render();
- toast(S.settings.iosTimer?'Ripartito da zero. Il timer di iOS va annullato a mano':'Ripartito da zero');
+ toast('Ripartito da zero');
 }
 
 /* ---------- ALERTS ---------- */
@@ -580,11 +580,7 @@ async function testPush(){
  const s=S.settings;if(!s.pushSub)return;
  try{const r=await postJ('/api/schedule',{subscription:s.pushSub,alerts:[{at:Date.now()+10000,title:'Prova Tonnetto 🐟',body:'Gli avvisi a telefono bloccato funzionano.'}]});if(!r.ok)throw 0;toast('Arriva tra 10 s: blocca pure il telefono')}catch(e){toast('Server non raggiungibile')}
 }
-function runIosTimer(sec){
- if(!S.settings.iosTimer)return;
- const n=Math.max(1,Math.round(sec));
- location.href='shortcuts://run-shortcut?name='+encodeURIComponent(S.settings.scName||'Tonnetto')+'&input=text&text='+n;
-}
+function runIosTimer(){} // rimosso: niente più Comandi Rapidi
 function ritualSheet(go){
  const t=T();
  openModal(`<h3>Prima di aprire la scatoletta</h3><p class="mut" style="margin:0 0 6px;font-size:14px">Un attimo di preparazione, poi 4 focus da ${S.settings.focus} min.</p>
@@ -605,7 +601,7 @@ function startNow(){
  const t=T(),was=t.running;start();
  if(!was&&T().running&&T().mode==='pomo')runIosTimer(value());
 }
-function pauseManual(){pause();if(S.settings.iosTimer&&T().mode==='pomo')toast('Il timer di iOS non si ferma: annullalo da Orologio')}
+function pauseManual(){pause()}
 let tt;function toast(m){const e=$('#toast');e.textContent=m;e.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('on'),2200)}
 
 /* ---------- SHEETS ---------- */
@@ -791,8 +787,7 @@ function renderSettings(){
  const notifState='Notification'in window?Notification.permission:'unsupported';
  $('#v-set').innerHTML=`<h2>Impostazioni</h2>
  <div class="card">${step('focus','Durata focus')}${step('short','Pausa breve')}${step('long','Pausa lunga')}${step('every','Pausa lunga ogni','sessioni di focus')}${step('goal','Obiettivo giornaliero')}</div>
- <div class="card">${sw('autoBreak','Avvia pausa in automatico')}${sw('autoFocus','Avvia focus dopo la pausa')}${sw('chime','Suono di fine sessione')}${sw('vibrate','Vibrazione','Solo sui dispositivi che la supportano')}${sw('wake','Schermo sempre acceso','Durante il timer')}${sw('ritual','Rituale prima del focus','Posto tranquillo, via le distrazioni, un solo compito. A inizio ciclo')}${sw('askNote','Nota a fine sessione','Scrivi com\'è andata')}<div class="set"><div>Avvisi a telefono bloccato<small>Fine focus e fine pausa, anche con l'app chiusa, senza uscire dall'app</small></div><label class="sw"><input type="checkbox" id="pushSw" ${s.pushOn?'checked':''}><span></span></label></div>${s.pushOn?'<div class="set"><div>Prova gli avvisi<small>Arriva una notifica tra 10 secondi</small></div><button class="chip" id="pushTest">Prova</button></div>':''}${sw('iosTimer','Avvisa con il Timer di iOS','Suona anche a telefono bloccato. Serve il comando rapido con durata in secondi')}
-  ${s.iosTimer?`<div class="set"><div style="flex:1">Nome del comando rapido<input type="text" id="scn" value="${esc(s.scName)}" style="margin-top:6px"></div><button class="chip" id="scTest">Prova 10 s</button></div>`:''}
+ <div class="card">${sw('autoBreak','Avvia pausa in automatico')}${sw('autoFocus','Avvia focus dopo la pausa')}${sw('chime','Suono di fine sessione')}${sw('vibrate','Vibrazione','Solo sui dispositivi che la supportano')}${sw('wake','Schermo sempre acceso','Durante il timer')}${sw('ritual','Rituale prima del focus','Posto tranquillo, via le distrazioni, un solo compito. A inizio ciclo')}${sw('askNote','Nota a fine sessione','Scrivi com\'è andata')}<div class="set"><div>Avvisi a telefono bloccato<small>Fine focus e fine pausa, anche con l'app chiusa, senza uscire dall'app</small></div><label class="sw"><input type="checkbox" id="pushSw" ${s.pushOn?'checked':''}><span></span></label></div>${s.pushOn?'<div class="set"><div>Prova gli avvisi<small>Arriva una notifica tra 10 secondi</small></div><button class="chip" id="pushTest">Prova</button></div>':''}
   <div class="set"><div>Notifiche<small>${notifState==='granted'?'Attive':notifState==='denied'?'Bloccate dal browser':notifState==='unsupported'?'Su iPhone: aggiungi Tonnetto alla schermata Home':'Non ancora autorizzate'}</small></div>${notifState==='granted'?`<label class="sw"><input type="checkbox" data-sw="notify" ${s.notify?'checked':''}><span></span></label>`:notifState==='default'?'<button class="chip" id="askN">Autorizza</button>':''}</div>
   <div class="set"><div>Tema</div><div class="seg sm" id="thm">${[['auto','Auto'],['light','Chiaro'],['dark','Scuro']].map(([k,l])=>`<button data-t="${k}" class="${s.theme===k?'on':''}">${l}</button>`).join('')}</div></div>
  </div>
@@ -800,8 +795,6 @@ function renderSettings(){
  <p class="mut" style="text-align:center;font-size:12px">Tonnetto · tutte le funzioni incluse, nessun abbonamento</p>`;
  $$('[data-st]').forEach(b=>b.onclick=()=>{const k=b.dataset.st,[mn,mx,st]=STEPS[k];s[k]=Math.min(mx,Math.max(mn,s[k]+st*+b.dataset.d));save();renderSettings();render()});
  $$('[data-sw]').forEach(i=>i.onchange=()=>{s[i.dataset.sw]=i.checked;save();if(i.dataset.sw==='wake'){i.checked&&T().running?wakeOn():wakeOff()}if(i.dataset.sw==='iosTimer')renderSettings()});
- const scn=$('#scn');if(scn)scn.onchange=()=>{s.scName=scn.value.trim()||'Tonnetto';save()};
- const sct=$('#scTest');if(sct)sct.onclick=()=>runIosTimer(10);
  const psw=$('#pushSw');if(psw)psw.onchange=async()=>{if(psw.checked){const ok=await enablePush();if(!ok)psw.checked=false;else toast('Avvisi attivi')}else disablePush();renderSettings()};
  const pt=$('#pushTest');if(pt)pt.onclick=testPush;
  $$('#thm button').forEach(b=>b.onclick=()=>{s.theme=b.dataset.t;save();applyTheme();renderSettings()});
@@ -890,7 +883,7 @@ canEl.addEventListener('pointermove',e=>{
 function endDrag(){
  if(!drag)return;const acc=drag.acc,t=T();drag=null;canEl.classList.remove('grab');
  if(acc>=24&&!t.running){pop();S.settings.pulled=true;startManual()}
- else if(acc<=-24&&t.running){pauseManual();if(!S.settings.iosTimer)toast('In pausa')}
+ else if(acc<=-24&&t.running){pauseManual();toast('In pausa')}
  const from=lastG,t0=performance.now();
  const step=now=>{const k=Math.min(1,(now-t0)/650),q=1-Math.pow(1-k,3);drawCan(from+(targetG-from)*q);anim=k<1?requestAnimationFrame(step):null};
  anim=requestAnimationFrame(step);
@@ -919,6 +912,7 @@ document.addEventListener('pointerdown',()=>{if(T().running&&!amb){ensureAudio()
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',applyTheme);
 
 load();
+S.settings.iosTimer=false;
 if(!S.settings.rulesV){Object.assign(S.settings,{focus:25,short:5,long:30,every:4,ritual:true,rulesV:1});save()}
 applyTheme();
 if(T().running&&T().mode==='pomo'&&T().endAt<=Date.now())complete(true,T().endAt);
