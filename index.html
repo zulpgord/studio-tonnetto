@@ -197,6 +197,9 @@ html,body{overflow-x:hidden}
 #boTime{color:#6b1d16;font-size:64px;font-weight:800;font-variant-numeric:tabular-nums;opacity:0;transition:opacity .5s}
 #boHint{color:#3a3a3a;font-size:14px;margin:6px 0 0;opacity:0;transition:opacity .5s}
 .blackout.peek #boTime,.blackout.peek #boHint{opacity:1}
+.taskline{font-size:15px;font-weight:700;color:var(--ink);text-align:center;max-width:300px;margin-bottom:-6px}
+.rit{display:flex;gap:12px;align-items:center;padding:11px 12px;border-radius:14px;background:var(--track);margin:8px 0;font-weight:600;font-size:15px}
+.rit input{width:22px;height:22px;accent-color:var(--cool);flex:none}
 @media (orientation:landscape) and (max-height:560px){
  main{padding-top:8px;padding-bottom:84px}
  .stage{flex-direction:row;justify-content:center;gap:44px;margin-top:6px}
@@ -247,6 +250,7 @@ html,body{overflow-x:hidden}
     </div>
    </div>
    <div class="side">
+    <div id="taskLine" class="taskline"></div>
     <div id="dots" class="dots"></div>
     <div id="hint" class="hint">Tira giù la linguetta per aprire la scatoletta</div>
     <div class="ctrls">
@@ -289,7 +293,7 @@ const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const K='tonnetto-v1';
 const PAL=['#e8463a','#2a78c2','#5f9a3a','#e9a320','#8a63c9','#ec6f86','#1f9e94','#64788d'];
 const DEF={
- settings:{focus:25,short:5,long:15,every:4,autoBreak:true,autoFocus:false,chime:true,vibrate:true,notify:false,wake:true,theme:'auto',goal:120,volume:.5,sound:'none',askNote:true,iosTimer:false,scName:'Tonnetto',pushOn:false,pushSub:null,pushRun:null,pushKey:null},
+ settings:{focus:25,short:5,long:30,every:4,ritual:true,autoBreak:true,autoFocus:false,chime:true,vibrate:true,notify:false,wake:true,theme:'auto',goal:120,volume:.5,sound:'none',askNote:true,iosTimer:false,scName:'Tonnetto',pushOn:false,pushSub:null,pushRun:null,pushKey:null},
  tags:[{id:'t1',name:'Lavoro',color:PAL[0]},{id:'t2',name:'Studio',color:PAL[1]},{id:'t3',name:'Lettura',color:PAL[2]},{id:'t4',name:'Scrittura',color:PAL[3]}],
  sessions:[],
  timer:{mode:'pomo',phase:'focus',running:false,endAt:0,remaining:null,planned:0,startedAt:0,acc:0,cycle:0,tag:'t1',focusStart:0}
@@ -344,7 +348,7 @@ function setPhase(p){const t=T();t.phase=p;t.remaining=null;t.planned=0;t.focusS
 function nextAfterFocus(){const t=T();return t.cycle>0&&t.cycle%S.settings.every===0?'long':'short'}
 function record(sec,abandoned){
  if(sec<60)return null;
- const t=T(),o={id:uid(),start:t.focusStart||Date.now()-sec*1000,end:Date.now(),dur:Math.round(sec),tag:t.tag,note:'',abandoned:!!abandoned};
+ const t=T(),o={id:uid(),start:t.focusStart||Date.now()-sec*1000,end:Date.now(),dur:Math.round(sec),tag:t.tag,note:t.task||'',abandoned:!!abandoned};
  S.sessions.push(o);return o;
 }
 function complete(silent,at){
@@ -388,7 +392,7 @@ async function resetFlow(){
   if(wasRunning&&!t.running)return; // stato cambiato nel frattempo
  }
  if(t.running){t.running=false;stopAmbient();wakeOff()}
- if(t.mode==='watch'){t.acc=0;t.focusStart=0}else{t.cycle=0;setPhase('focus')}
+ if(t.mode==='watch'){t.acc=0;t.focusStart=0}else{t.cycle=0;t.task='';setPhase('focus')}
  save();render();
  toast(S.settings.iosTimer?'Ripartito da zero. Il timer di iOS va annullato a mano':'Ripartito da zero');
 }
@@ -500,6 +504,7 @@ function render(){
  $('#mainBtn').innerHTML=t.running?ICON.pause:ICON.play;
  $('#skipBtn').innerHTML=t.mode==='watch'?ICON.check:ICON.skip;
  $('#skipBtn').setAttribute('aria-label',t.mode==='watch'?'Termina e salva':'Salta');
+ const tl=$('#taskLine');tl.textContent=t.task?'🎯 '+t.task:'';tl.style.display=t.task&&t.mode==='pomo'?'':'none';
  $('#hint').style.display=!t.running&&!S.settings.pulled?'':'none';
  const n=S.settings.every,done=t.cycle%n;
  $('#dots').innerHTML=t.mode==='pomo'?Array.from({length:n},(_,i)=>`<b class="${i<done?'f':''}"></b>`).join(''):'';
@@ -580,7 +585,23 @@ function runIosTimer(sec){
  const n=Math.max(1,Math.round(sec));
  location.href='shortcuts://run-shortcut?name='+encodeURIComponent(S.settings.scName||'Tonnetto')+'&input=text&text='+n;
 }
+function ritualSheet(go){
+ const t=T();
+ openModal(`<h3>Prima di aprire la scatoletta</h3><p class="mut" style="margin:0 0 6px;font-size:14px">Un attimo di preparazione, poi 4 focus da ${S.settings.focus} min.</p>
+ <label class="rit"><input type="checkbox"><span>Sono in un posto tranquillo</span></label>
+ <label class="rit"><input type="checkbox"><span>Ho tolto le distrazioni (notifiche, schede, telefono)</span></label>
+ <div class="field"><label>Il mio unico compito</label><input type="text" id="taskIn" maxlength="60" placeholder="es. finire la bozza del capitolo 3" value="${esc(t.task||'')}"></div>
+ <div class="btns"><button class="btn" id="ritSkip">Salta</button><button class="btn pri" id="ritGo">Apri la scatoletta</button></div>`);
+ const fin=()=>{t.task=$('#taskIn').value.trim();save();closeModal();go()};
+ $('#ritGo').onclick=fin;$('#ritSkip').onclick=fin;
+ $('#taskIn').onkeydown=e=>{if(e.key==='Enter')fin()};
+}
 function startManual(){
+ const t=T();
+ if(S.settings.ritual&&!t.running&&t.mode==='pomo'&&t.phase==='focus'&&t.remaining==null&&t.cycle%S.settings.every===0){ritualSheet(startNow);return}
+ startNow();
+}
+function startNow(){
  const t=T(),was=t.running;start();
  if(!was&&T().running&&T().mode==='pomo')runIosTimer(value());
 }
@@ -770,7 +791,7 @@ function renderSettings(){
  const notifState='Notification'in window?Notification.permission:'unsupported';
  $('#v-set').innerHTML=`<h2>Impostazioni</h2>
  <div class="card">${step('focus','Durata focus')}${step('short','Pausa breve')}${step('long','Pausa lunga')}${step('every','Pausa lunga ogni','sessioni di focus')}${step('goal','Obiettivo giornaliero')}</div>
- <div class="card">${sw('autoBreak','Avvia pausa in automatico')}${sw('autoFocus','Avvia focus dopo la pausa')}${sw('chime','Suono di fine sessione')}${sw('vibrate','Vibrazione','Solo sui dispositivi che la supportano')}${sw('wake','Schermo sempre acceso','Durante il timer')}${sw('askNote','Nota a fine sessione','Scrivi com\'è andata')}<div class="set"><div>Avvisi a telefono bloccato<small>Fine focus e fine pausa, anche con l'app chiusa, senza uscire dall'app</small></div><label class="sw"><input type="checkbox" id="pushSw" ${s.pushOn?'checked':''}><span></span></label></div>${s.pushOn?'<div class="set"><div>Prova gli avvisi<small>Arriva una notifica tra 10 secondi</small></div><button class="chip" id="pushTest">Prova</button></div>':''}${sw('iosTimer','Avvisa con il Timer di iOS','Suona anche a telefono bloccato. Serve il comando rapido con durata in secondi')}
+ <div class="card">${sw('autoBreak','Avvia pausa in automatico')}${sw('autoFocus','Avvia focus dopo la pausa')}${sw('chime','Suono di fine sessione')}${sw('vibrate','Vibrazione','Solo sui dispositivi che la supportano')}${sw('wake','Schermo sempre acceso','Durante il timer')}${sw('ritual','Rituale prima del focus','Posto tranquillo, via le distrazioni, un solo compito. A inizio ciclo')}${sw('askNote','Nota a fine sessione','Scrivi com\'è andata')}<div class="set"><div>Avvisi a telefono bloccato<small>Fine focus e fine pausa, anche con l'app chiusa, senza uscire dall'app</small></div><label class="sw"><input type="checkbox" id="pushSw" ${s.pushOn?'checked':''}><span></span></label></div>${s.pushOn?'<div class="set"><div>Prova gli avvisi<small>Arriva una notifica tra 10 secondi</small></div><button class="chip" id="pushTest">Prova</button></div>':''}${sw('iosTimer','Avvisa con il Timer di iOS','Suona anche a telefono bloccato. Serve il comando rapido con durata in secondi')}
   ${s.iosTimer?`<div class="set"><div style="flex:1">Nome del comando rapido<input type="text" id="scn" value="${esc(s.scName)}" style="margin-top:6px"></div><button class="chip" id="scTest">Prova 10 s</button></div>`:''}
   <div class="set"><div>Notifiche<small>${notifState==='granted'?'Attive':notifState==='denied'?'Bloccate dal browser':notifState==='unsupported'?'Su iPhone: aggiungi Tonnetto alla schermata Home':'Non ancora autorizzate'}</small></div>${notifState==='granted'?`<label class="sw"><input type="checkbox" data-sw="notify" ${s.notify?'checked':''}><span></span></label>`:notifState==='default'?'<button class="chip" id="askN">Autorizza</button>':''}</div>
   <div class="set"><div>Tema</div><div class="seg sm" id="thm">${[['auto','Auto'],['light','Chiaro'],['dark','Scuro']].map(([k,l])=>`<button data-t="${k}" class="${s.theme===k?'on':''}">${l}</button>`).join('')}</div></div>
@@ -897,7 +918,9 @@ $('#blackBtn').onclick=blackOn;
 document.addEventListener('pointerdown',()=>{if(T().running&&!amb){ensureAudio();playAmbient()}},{once:true});
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',applyTheme);
 
-load();applyTheme();
+load();
+if(!S.settings.rulesV){Object.assign(S.settings,{focus:25,short:5,long:30,every:4,ritual:true,rulesV:1});save()}
+applyTheme();
 if(T().running&&T().mode==='pomo'&&T().endAt<=Date.now())complete(true,T().endAt);
 render();
 setInterval(tick,250);
