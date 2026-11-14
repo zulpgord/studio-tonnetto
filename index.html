@@ -72,7 +72,7 @@ body.zen main{padding-top:9vh}
 nav{position:fixed;left:0;right:0;bottom:0;z-index:5;display:flex;justify-content:center;padding:0 12px calc(10px + env(safe-area-inset-bottom))}
 .navin{display:flex;gap:2px;background:#12305a;border-radius:999px;padding:6px;box-shadow:0 10px 24px -8px rgba(12,34,54,.5)}
 [data-theme=dark] .navin{background:#081a2b;border:1px solid var(--line)}
-nav button{display:flex;flex-direction:column;align-items:center;gap:0;padding:6px 11px 4px;border-radius:999px;font-size:11px;color:#9fb6cf;font-weight:600}
+nav button{display:flex;flex-direction:column;align-items:center;gap:0;padding:6px 8px 4px;border-radius:999px;font-size:11px;color:#9fb6cf;font-weight:600}
 nav button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 nav button.on{color:#12305a;background:var(--acc)}
 /* stats */
@@ -209,6 +209,40 @@ html,body{overflow-x:hidden}
 @keyframes alarmWiggle{from{transform:rotate(-8deg)}to{transform:rotate(8deg)}}
 .alarm-in h2{margin:4px 0 6px}.alarm-in p{color:var(--mut);margin:0 0 18px;font-size:16px}
 .alarm-in .btn{width:100%;font-size:18px;padding:14px}
+/* studio */
+.bait{background:var(--card);border-radius:20px;padding:12px 14px;box-shadow:var(--lift);max-width:320px;width:100%;text-align:left}
+.bait small{display:block;color:var(--mut);font-weight:700;font-size:13px}
+.bait p{margin:2px 0 2px;font-weight:700;font-size:16px;line-height:1.25}
+.bait .btn{width:100%;margin-top:10px}
+body.zen #baitCard{display:none!important}
+.btn:disabled{opacity:.45;cursor:default}
+.shelf{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.shelf button{display:flex;flex-direction:column;align-items:center;padding:4px 0 2px;border-radius:14px;font-size:13px;font-weight:800;color:var(--mut);line-height:1}
+.shelf button.cur{background:var(--track);color:var(--ink)}
+.shelf svg{width:44px;height:44px}
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--mut);margin-top:10px;font-weight:600}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.weeks{display:flex;gap:5px;margin-top:10px}
+.weeks span{flex:1;height:28px;border-radius:9px;background:var(--track);display:grid;place-items:center;font-size:13px;font-weight:800;color:var(--mut)}
+.weeks .k{background:var(--cool);color:#fff}.weeks .b{background:color-mix(in srgb,var(--acc) 55%,var(--card))}.weeks .c{box-shadow:inset 0 0 0 2px var(--ink)}
+.lvl{display:flex;align-items:center;gap:12px}.lvl svg{width:92px;height:52px;flex:none}
+.stat3{display:grid;grid-template-columns:repeat(3,1fr);text-align:center;gap:6px;margin-top:10px}
+.stat3 b{display:block;font-size:26px;font-weight:800;line-height:1.1}.stat3 small{color:var(--mut);font-size:12px;font-weight:600}
+.statepick{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:6px 0}
+.statepick button{padding:8px 2px;border-radius:14px;background:var(--track);font-size:13px;font-weight:700;border:2px solid transparent;line-height:1.15}
+.statepick button.on{border-color:var(--cool);background:var(--card)}
+.qcard{background:var(--track);border-radius:16px;padding:12px 14px;font-weight:700;font-size:17px;margin:8px 0;line-height:1.3}
+.reveal{border-left:4px solid var(--acc);padding:6px 10px;margin:8px 0;font-size:15px;white-space:pre-wrap;background:color-mix(in srgb,var(--acc) 8%,transparent);border-radius:0 10px 10px 0}
+.grade{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+.grade .btn{padding:10px 4px;font-size:14px}.grade .btn.on{outline:3px solid var(--cool)}
+.simtime{position:sticky;top:-22px;background:var(--card);padding:8px 0;z-index:2;display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:17px}
+#simClock{font-variant-numeric:tabular-nums;color:var(--warm);font-size:22px}
+.stars{display:flex;gap:4px;justify-content:center;margin:4px 0 10px}
+.stars button{font-size:30px;filter:grayscale(1);opacity:.35}.stars button.on{filter:none;opacity:1}
+nav button{position:relative}
+nav .nb{position:absolute;top:1px;right:4px;min-width:16px;height:16px;border-radius:9px;background:var(--warm);color:#fff;font-size:10px;line-height:16px;padding:0 4px;display:none;font-weight:800}
+nav .nb.on{display:block}
+code{font-size:13px;background:var(--track);padding:1px 5px;border-radius:6px}
 @media (orientation:landscape) and (max-height:560px){
  main{padding-top:8px;padding-bottom:84px}
  .stage{flex-direction:row;justify-content:center;gap:44px;margin-top:6px}
@@ -259,6 +293,7 @@ html,body{overflow-x:hidden}
     </div>
    </div>
    <div class="side">
+    <div id="baitCard" class="bait" style="display:none"></div>
     <div id="taskLine" class="taskline"></div>
     <div id="dots" class="dots"></div>
     <div id="hint" class="hint">Tira giù la linguetta per aprire la scatoletta</div>
@@ -271,12 +306,16 @@ html,body{overflow-x:hidden}
      <button id="soundBtn" class="chip hide-zen">🎧 <span>Silenzio</span></button>
      <button id="zenBtn" class="chip">🎯 <span>Modalità focus</span></button>
      <button id="blackBtn" class="chip zen-only">⬛ <span>Schermo nero</span></button>
+     <button id="miniBtn" class="chip hide-zen">🥫 <span>Solo 10 min</span></button>
+     <button id="chBtn" class="chip hide-zen">📖 <span></span></button>
+     <button id="dueBtn" class="chip hide-zen">⏳ <span></span></button>
     </div>
     <div id="todayLine" class="today"></div>
    </div>
   </div>
  </section>
 
+ <section id="v-study" class="view"></section>
  <section id="v-cal" class="view"></section>
  <section id="v-stats" class="view"></section>
  <section id="v-tags" class="view"></section>
@@ -285,6 +324,7 @@ html,body{overflow-x:hidden}
 
 <nav><div class="navin">
  <button data-v="timer" class="on"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg><span>Timer</span></button>
+ <button data-v="study"><svg viewBox="0 0 24 24"><path d="M4 19.5V5a2 2 0 0 1 2-2h14v15H6a2 2 0 0 0-2 2 2 2 0 0 0 2 2h14"/><path d="M9 7h7M9 11h5"/></svg><span>Studio</span><b class="nb" id="dueBadge"></b></button>
  <button data-v="cal"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Agenda</span></button>
  <button data-v="stats"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Statistiche</span></button>
  <button data-v="tags"><svg viewBox="0 0 24 24"><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><circle cx="8" cy="8" r="1.5"/></svg><span>Tag</span></button>
@@ -303,7 +343,8 @@ const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const K='tonnetto-v1';
 const PAL=['#e8463a','#2a78c2','#5f9a3a','#e9a320','#8a63c9','#ec6f86','#1f9e94','#64788d'];
 const DEF={
- settings:{focus:25,short:5,long:30,every:4,ritual:true,autoBreak:true,autoFocus:false,chime:true,vibrate:true,notify:false,wake:true,theme:'auto',goal:120,volume:.5,sound:'none',askNote:true,iosTimer:false,scName:'Tonnetto',pushOn:false,pushSub:null,pushRun:null,pushKey:null},
+ settings:{focus:25,short:5,long:30,every:4,ritual:true,autoBreak:true,autoFocus:false,chime:true,vibrate:true,notify:false,wake:true,theme:'auto',goal:120,volume:.5,sound:'none',askNote:true,iosTimer:false,scName:'Tonnetto',pushOn:false,pushSub:null,pushRun:null,pushKey:null,mini:10,recall:true},
+ study:{examName:'Psicobiologia del comportamento umano',examDate:'2027-03-15',start:null,perWeek:3,tag:'t2',chapters:mkChapters(19),bait:'',baitCh:1,curCh:1,questions:[],sims:[],log:[],ratings:{},simMin:60},
  tags:[{id:'t1',name:'Lavoro',color:PAL[0]},{id:'t2',name:'Studio',color:PAL[1]},{id:'t3',name:'Lettura',color:PAL[2]},{id:'t4',name:'Scrittura',color:PAL[3]}],
  sessions:[],
  timer:{mode:'pomo',phase:'focus',running:false,endAt:0,remaining:null,planned:0,startedAt:0,acc:0,cycle:0,tag:'t1',focusStart:0}
@@ -311,7 +352,7 @@ const DEF={
 let S;
 const clone=o=>JSON.parse(JSON.stringify(o));
 function load(){
- try{const r=localStorage.getItem(K);if(r){const o=JSON.parse(r);S={...clone(DEF),...o,settings:{...DEF.settings,...o.settings},timer:{...DEF.timer,...o.timer}};return}}catch(e){}
+ try{const r=localStorage.getItem(K);if(r){const o=JSON.parse(r);S={...clone(DEF),...o,settings:{...DEF.settings,...o.settings},timer:{...DEF.timer,...o.timer},study:{...clone(DEF.study),...(o.study||{})}};return}}catch(e){}
  S=clone(DEF);
 }
 function save(){try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}if(typeof queueSync==='function')queueSync()}
@@ -354,33 +395,43 @@ function pause(){
  else t.remaining=Math.max(0,(t.endAt-Date.now())/1000);
  t.running=false;save();stopAmbient();wakeOff();render();
 }
-function setPhase(p){const t=T();t.phase=p;t.remaining=null;t.planned=0;t.focusStart=0;t.running=false}
+function setPhase(p){const t=T();t.phase=p;t.remaining=null;t.planned=0;t.focusStart=0;t.running=false;t.mini=false}
 function nextAfterFocus(){const t=T();return t.cycle>0&&t.cycle%S.settings.every===0?'long':'short'}
 function record(sec,abandoned){
  if(sec<60)return null;
  const t=T(),o={id:uid(),start:t.focusStart||Date.now()-sec*1000,end:Date.now(),dur:Math.round(sec),tag:t.tag,note:t.task||'',abandoned:!!abandoned};
+ if(S.study.tag&&t.tag===S.study.tag)o.ch=S.study.curCh;
+ if(t.mini)o.mini=true;
  S.sessions.push(o);return o;
 }
 function complete(silent,at){
- const t=T();const prev=t.phase;t.running=false;let ses=null;
- if(prev==='focus'){ses=record(t.planned||phaseDur('focus'));t.cycle++;if(!silent)blackOff()}
- setPhase(prev==='focus'?nextAfterFocus():'focus');
- if(!silent){alertEnd(prev);if(!(ses&&S.settings.askNote))toast(prev==='focus'?'Scatoletta aperta! 🐟':'Pausa finita, si riparte')}
- const auto=t.phase==='focus'?S.settings.autoFocus:S.settings.autoBreak;
+ const t=T();const prev=t.phase,wasMini=!!t.mini;t.running=false;let ses=null;
+ if(prev==='focus'){ses=record(t.planned||phaseDur('focus'));if(!wasMini)t.cycle++;if(!silent)blackOff()}
+ setPhase(prev==='focus'&&!wasMini?nextAfterFocus():'focus');
+ const recall=!silent&&!!ses&&isStudy(ses)&&S.settings.recall;
+ if(!silent){alertEnd(prev,wasMini);if(!(ses&&(S.settings.askNote||recall||wasMini)))toast(prev==='focus'?'Scatoletta aperta! 🐟':'Pausa finita, si riparte')}
+ const auto=!wasMini&&(t.phase==='focus'?S.settings.autoFocus:S.settings.autoBreak);
  if(auto&&silent&&at){ // recupero: la fase successiva era partita con l'app chiusa
   t.planned=phaseDur(t.phase);t.remaining=t.planned;t.endAt=at+t.planned*1000;t.running=true;if(t.phase==='focus')t.focusStart=at;
   if(t.endAt<=Date.now()){complete(true,t.endAt);return}
   save();render();return;
  }
  save();
- if(auto&&!silent)start();else{stopAmbient();wakeOff();render()}
- if(!silent)noteSheet(ses);
+ const hold=recall&&auto; // con il richiamo attivo la pausa parte dopo aver scritto
+ if(auto&&!silent&&!hold)start();else{stopAmbient();wakeOff();render()}
+ if(!silent)afterFocus(ses,{mini:wasMini,after:hold?()=>{const x=T();if(!x.running&&x.phase!=='focus'&&x.remaining==null)start()}:null});
+}
+function startMini(){
+ const t=T();if(t.running)return;
+ if(t.mode!=='pomo'){t.mode='pomo';t.acc=0}
+ setPhase('focus');t.mini=true;t.planned=S.settings.mini*60;t.remaining=t.planned;t.focusStart=Date.now();
+ S.settings.pulled=true;start();toast('Solo '+S.settings.mini+' minuti. Poi decidi tu 🥫');
 }
 function skip(){
  const t=T();
  if(t.mode==='watch'){finishWatch();return}
  let ses=null;if(t.phase==='focus'){const el=focusElapsed();ses=record(el,true);if(ses)toast('Interrotta: salvati '+fmtMin(Math.round(el/60)))}
- setPhase(t.phase==='focus'?nextAfterFocus():'focus');
+ setPhase(t.phase==='focus'&&!t.mini?nextAfterFocus():'focus');
  save();stopAmbient();wakeOff();render();noteSheet(ses);
 }
 function finishWatch(){
@@ -403,6 +454,7 @@ async function resetFlow(){
  }
  if(t.running){t.running=false;stopAmbient();wakeOff()}
  if(t.mode==='watch'){t.acc=0;t.focusStart=0}else{t.cycle=0;t.task='';setPhase('focus')}
+ t.mini=false;
  save();render();
  toast('Ripartito da zero');
 }
@@ -461,21 +513,21 @@ function chime(){
  if(!AC)return;if(AC.state==='suspended')AC.resume().catch(()=>{});const t0=AC.currentTime;
  [0,1.4,2.8].flatMap(r=>[[523.25,r],[659.25,r+.16],[783.99,r+.32],[1046.5,r+.5]]).forEach(([f,d])=>{const o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(0,t0+d);g.gain.linearRampToValueAtTime(.45,t0+d+.02);g.gain.exponentialRampToValueAtTime(.001,t0+d+1.4);o.connect(g);g.connect(AC.destination);o.start(t0+d);o.stop(t0+d+1.5)});
 }
-function alertEnd(prev){
+function alertEnd(prev,mini){
  if(S.settings.chime)chime();
- showAlarm(prev);
+ showAlarm(prev,mini);
  if(S.settings.vibrate&&navigator.vibrate)try{navigator.vibrate([220,120,220])}catch(e){}
  if(S.settings.notify&&!S.settings.pushOn&&'Notification'in window&&Notification.permission==='granted'){
-  const ti=prev==='focus'?'Focus completato 🐟':'Pausa terminata',op={body:prev==='focus'?'Tempo di una pausa.':'Pronto per il prossimo focus?',icon:'icon-512.png',badge:'icon-180.png',tag:'tonnetto'};
+  const ti=mini?'Scatoletta piccola aperta 🐟':prev==='focus'?'Focus completato 🐟':'Pausa terminata',op={body:mini?'Chiudi qui o continui?':prev==='focus'?'Tempo di una pausa.':'Pronto per il prossimo focus?',icon:'icon-512.png',badge:'icon-180.png',tag:'tonnetto'};
   if(navigator.serviceWorker&&navigator.serviceWorker.controller)navigator.serviceWorker.ready.then(r=>r.showNotification(ti,op)).catch(()=>{});else try{new Notification(ti,op)}catch(e){}
  }
 }
 let alarmT=null;
-function showAlarm(prev){
+function showAlarm(prev,mini){
  const a=$('#alarm');if(!a)return;
  const nb=T().phase;
- $('#alTitle').textContent=prev==='focus'?'Focus completato 🐟':'Pausa finita';
- $('#alBody').textContent=prev==='focus'?(S.settings.autoBreak?PH[nb]+' iniziata: '+S.settings[nb]+' min.':'Tempo di una pausa.'):(S.settings.autoFocus?'Nuovo focus iniziato.':'Pronto per il prossimo focus?');
+ $('#alTitle').textContent=mini?'Scatoletta piccola aperta 🐟':prev==='focus'?'Focus completato 🐟':'Pausa finita';
+ $('#alBody').textContent=mini?'Promessa mantenuta. Chiudi qui o continui?':prev==='focus'?(S.settings.autoBreak?PH[nb]+' iniziata: '+S.settings[nb]+' min.':'Tempo di una pausa.'):(S.settings.autoFocus?'Nuovo focus iniziato.':'Pronto per il prossimo focus?');
  $('#alCan').innerHTML=canIcon(false);
  a.classList.add('on');
  let n=0;clearInterval(alarmT);
@@ -535,15 +587,16 @@ function render(){
  const snd=SOUNDS.find(s=>s[0]===S.settings.sound)||SOUNDS[0];$('#soundBtn span').textContent=snd[2];
  const today=dayKey(Date.now()),ts=S.sessions.filter(s=>dayKey(s.start)===today&&!s.abandoned),m=Math.round(ts.reduce((a,s)=>a+s.dur,0)/60);
  $('#todayLine').innerHTML=`Oggi <b>${fmtMin(Math.round(S.sessions.filter(s=>dayKey(s.start)===today).reduce((a,s)=>a+s.dur,0)/60))}</b> · ${ts.length} ${ts.length===1?'scatoletta':'scatolette'} · obiettivo ${fmtMin(S.settings.goal)}<div class="goalbar"><i style="width:${Math.min(100,m/S.settings.goal*100)}%"></i></div>`;
+ renderStudyBits();
  tick();
  if($('#v-stats').classList.contains('on'))renderStats();
 }
 
 /* ---------- MODAL / TOAST ---------- */
 const modal=$('#modal'),sheet=$('#sheet');let onClose=null;
-function openModal(html){sheet.innerHTML=html;modal.classList.add('on')}
-function closeModal(){modal.classList.remove('on');const f=onClose;onClose=null;f&&f()}
-modal.addEventListener('click',e=>{if(e.target===modal)closeModal()});
+function openModal(html){sheet.dataset.lock='';sheet.innerHTML=html;sheet.scrollTop=0;modal.classList.add('on')}
+function closeModal(){modal.classList.remove('on');sheet.dataset.lock='';const f=onClose;onClose=null;f&&f()}
+modal.addEventListener('click',e=>{if(e.target===modal&&!sheet.dataset.lock)closeModal()});
 function ask(title,msg,btns){return new Promise(res=>{
  openModal(`<h3>${title}</h3><p class="mut">${msg}</p><div class="btns">${btns.map(([v,l,c])=>`<button class="btn ${c||''}" data-r="${v}">${l}</button>`).join('')}</div>`);
  onClose=()=>res('cancel');
@@ -556,6 +609,7 @@ function b64u(s){const p='='.repeat((4-s.length%4)%4),b=atob((s+p).replace(/-/g,
 function buildAlerts(){
  const t=T();if(!t.running||t.mode!=='pomo')return[];
  const a=[],fin={title:'Focus completato 🐟',body:'Tempo di una pausa.'},pau={title:'Pausa finita',body:'Pronto per il prossimo focus?'};let at=t.endAt;
+ if(t.mini)return[{at,title:'Scatoletta piccola aperta 🐟',body:'Promessa mantenuta. Chiudi qui o continui?'}];
  if(t.phase==='focus'){const nb=(t.cycle+1)%S.settings.every===0?'long':'short';a.push({at,title:fin.title,body:S.settings.autoBreak?PH[nb]+' iniziata: '+S.settings[nb]+' min.':fin.body});if(S.settings.autoBreak){at+=phaseDur(nb)*1000;a.push({at,...pau})}}
  else{a.push({at,...pau});if(S.settings.autoFocus){at+=phaseDur('focus')*1000;a.push({at,...fin})}}
  return a;
@@ -610,7 +664,7 @@ function ritualSheet(go){
  openModal(`<h3>Prima di aprire la scatoletta</h3><p class="mut" style="margin:0 0 6px;font-size:14px">Un attimo di preparazione, poi 4 focus da ${S.settings.focus} min.</p>
  <label class="rit"><input type="checkbox"><span>Sono in un posto tranquillo</span></label>
  <label class="rit"><input type="checkbox"><span>Ho tolto le distrazioni (notifiche, schede, telefono)</span></label>
- <div class="field"><label>Il mio unico compito</label><input type="text" id="taskIn" maxlength="60" placeholder="es. finire la bozza del capitolo 3" value="${esc(t.task||'')}"></div>
+ <div class="field"><label>Il mio unico compito</label><input type="text" id="taskIn" maxlength="60" placeholder="es. finire la bozza del capitolo 3" value="${esc(t.task||(S.study.tag&&t.tag===S.study.tag?S.study.bait:'')||'')}"></div>
  <div class="btns"><button class="btn" id="ritSkip">Salta</button><button class="btn pri" id="ritGo">Apri la scatoletta</button></div>`);
  const fin=()=>{t.task=$('#taskIn').value.trim();save();closeModal();go()};
  $('#ritGo').onclick=fin;$('#ritSkip').onclick=fin;
@@ -763,7 +817,7 @@ function renderCal(){
 }
 
 /* ---------- SESSION SHEETS ---------- */
-function refreshViews(){render();if($('#v-cal').classList.contains('on'))renderCal()}
+function refreshViews(){render();if($('#v-cal').classList.contains('on'))renderCal();if($('#v-study').classList.contains('on'))renderStudy()}
 function sessionEdit(id,day){
  const s=id?S.sessions.find(x=>x.id===id):null;if(id&&!s)return;
  let st;if(s)st=new Date(s.start);else{const base=day!=null&&day!==midnight(Date.now())?day+9*3600000:Date.now()-25*60000;st=new Date(base)}
@@ -803,15 +857,15 @@ function tagEdit(id){
 }
 
 /* ---------- SETTINGS ---------- */
-const STEPS={focus:[1,180,1,'min'],short:[1,60,1,'min'],long:[1,90,1,'min'],every:[2,12,1,''],goal:[15,720,15,'min']};
+const STEPS={focus:[1,180,1,'min'],short:[1,60,1,'min'],long:[1,90,1,'min'],every:[2,12,1,''],goal:[15,720,15,'min'],mini:[3,20,1,'min']};
 function renderSettings(){
  const s=S.settings;
  const step=(k,l,d)=>`<div class="set"><div>${l}${d?`<small>${d}</small>`:''}</div><div class="step"><button data-st="${k}" data-d="-1">−</button><b>${s[k]}${STEPS[k][3]?' '+STEPS[k][3]:''}</b><button data-st="${k}" data-d="1">+</button></div></div>`;
  const sw=(k,l,d)=>`<div class="set"><div>${l}${d?`<small>${d}</small>`:''}</div><label class="sw"><input type="checkbox" data-sw="${k}" ${s[k]?'checked':''}><span></span></label></div>`;
  const notifState='Notification'in window?Notification.permission:'unsupported';
  $('#v-set').innerHTML=`<h2>Impostazioni</h2>
- <div class="card">${step('focus','Durata focus')}${step('short','Pausa breve')}${step('long','Pausa lunga')}${step('every','Pausa lunga ogni','sessioni di focus')}${step('goal','Obiettivo giornaliero')}</div>
- <div class="card">${sw('autoBreak','Avvia pausa in automatico')}${sw('autoFocus','Avvia focus dopo la pausa')}${sw('chime','Suono di fine sessione')}${sw('vibrate','Vibrazione','Solo sui dispositivi che la supportano')}${sw('wake','Schermo sempre acceso','Durante il timer')}${sw('ritual','Rituale prima del focus','Posto tranquillo, via le distrazioni, un solo compito. A inizio ciclo')}${sw('askNote','Nota a fine sessione','Scrivi com\'è andata')}<div class="set"><div>Avvisi a telefono bloccato<small>Fine focus e fine pausa, anche con l'app chiusa, senza uscire dall'app</small></div><label class="sw"><input type="checkbox" id="pushSw" ${s.pushOn?'checked':''}><span></span></label></div>${s.pushOn?'<div class="set"><div>Prova gli avvisi<small>Arriva una notifica tra 10 secondi</small></div><button class="chip" id="pushTest">Prova</button></div>':''}
+ <div class="card">${step('focus','Durata focus')}${step('short','Pausa breve')}${step('long','Pausa lunga')}${step('every','Pausa lunga ogni','sessioni di focus')}${step('goal','Obiettivo giornaliero')}${step('mini','Scatoletta piccola','Per le serate no: poi decidi se continuare')}</div>
+ <div class="card">${sw('autoBreak','Avvia pausa in automatico')}${sw('autoFocus','Avvia focus dopo la pausa')}${sw('chime','Suono di fine sessione')}${sw('vibrate','Vibrazione','Solo sui dispositivi che la supportano')}${sw('wake','Schermo sempre acceso','Durante il timer')}${sw('ritual','Rituale prima del focus','Posto tranquillo, via le distrazioni, un solo compito. A inizio ciclo')}${sw('askNote','Nota a fine sessione','Scrivi com\'è andata')}${sw('recall','Pausa con richiamo','Per le sessioni di studio: 3 righe a memoria e l\'esca prima della pausa')}<div class="set"><div>Avvisi a telefono bloccato<small>Fine focus e fine pausa, anche con l'app chiusa, senza uscire dall'app</small></div><label class="sw"><input type="checkbox" id="pushSw" ${s.pushOn?'checked':''}><span></span></label></div>${s.pushOn?'<div class="set"><div>Prova gli avvisi<small>Arriva una notifica tra 10 secondi</small></div><button class="chip" id="pushTest">Prova</button></div>':''}
   <div class="set"><div>Notifiche<small>${notifState==='granted'?'Attive':notifState==='denied'?'Bloccate dal browser':notifState==='unsupported'?'Su iPhone: aggiungi Tonnetto alla schermata Home':'Non ancora autorizzate'}</small></div>${notifState==='granted'?`<label class="sw"><input type="checkbox" data-sw="notify" ${s.notify?'checked':''}><span></span></label>`:notifState==='default'?'<button class="chip" id="askN">Autorizza</button>':''}</div>
   <div class="set"><div>Tema</div><div class="seg sm" id="thm">${[['auto','Auto'],['light','Chiaro'],['dark','Scuro']].map(([k,l])=>`<button data-t="${k}" class="${s.theme===k?'on':''}">${l}</button>`).join('')}</div></div>
  </div>
@@ -823,9 +877,9 @@ function renderSettings(){
  const pt=$('#pushTest');if(pt)pt.onclick=testPush;
  $$('#thm button').forEach(b=>b.onclick=()=>{s.theme=b.dataset.t;save();applyTheme();renderSettings()});
  const an=$('#askN');if(an)an.onclick=async()=>{try{const p=await Notification.requestPermission();if(p==='granted'){s.notify=true;save()}}catch(e){}renderSettings()};
- $('#exp').onclick=()=>{const j=JSON.stringify({tags:S.tags,sessions:S.sessions,settings:S.settings});openModal(`<h3>Esporta dati</h3><textarea readonly id="ej">${esc(j)}</textarea><div class="btns"><button class="btn pri" id="cp">Copia</button><button class="btn" id="cl">Chiudi</button></div>`);$('#cl').onclick=closeModal;$('#cp').onclick=()=>{navigator.clipboard.writeText(j).then(()=>toast('Copiato'),()=>{$('#ej').select();toast('Seleziona e copia a mano')})}};
- $('#imp').onclick=()=>{openModal(`<h3>Importa dati</h3><p class="mut" style="font-size:13px">Incolla il testo esportato. Sostituirà i dati attuali.</p><textarea id="ij" placeholder='{"tags":[...],"sessions":[...]}'></textarea><div class="btns"><button class="btn" id="cl">Annulla</button><button class="btn pri" id="go">Importa</button></div>`);$('#cl').onclick=closeModal;$('#go').onclick=()=>{try{const o=JSON.parse($('#ij').value);if(!Array.isArray(o.sessions)||!Array.isArray(o.tags))throw 0;S.sessions=o.sessions;S.tags=o.tags;if(o.settings)S.settings={...S.settings,...o.settings};save();closeModal();applyTheme();renderSettings();render();toast('Dati importati')}catch(e){toast('Testo non valido')}}};
- $('#wipe').onclick=async()=>{if(await ask('Azzerare tutto?','Sessioni, tag e impostazioni verranno cancellati.',[['ok','Azzera','dan'],['cancel','Annulla']])==='ok'){stopAmbient();wakeOff();S=clone(DEF);save();applyTheme();renderSettings();render()}};
+ $('#exp').onclick=()=>{const j=JSON.stringify({tags:S.tags,sessions:S.sessions,settings:S.settings,study:S.study});openModal(`<h3>Esporta dati</h3><textarea readonly id="ej">${esc(j)}</textarea><div class="btns"><button class="btn pri" id="cp">Copia</button><button class="btn" id="cl">Chiudi</button></div>`);$('#cl').onclick=closeModal;$('#cp').onclick=()=>{navigator.clipboard.writeText(j).then(()=>toast('Copiato'),()=>{$('#ej').select();toast('Seleziona e copia a mano')})}};
+ $('#imp').onclick=()=>{openModal(`<h3>Importa dati</h3><p class="mut" style="font-size:13px">Incolla il testo esportato. Sostituirà i dati attuali.</p><textarea id="ij" placeholder='{"tags":[...],"sessions":[...]}'></textarea><div class="btns"><button class="btn" id="cl">Annulla</button><button class="btn pri" id="go">Importa</button></div>`);$('#cl').onclick=closeModal;$('#go').onclick=()=>{try{const o=JSON.parse($('#ij').value);if(!Array.isArray(o.sessions)||!Array.isArray(o.tags))throw 0;S.sessions=o.sessions;S.tags=o.tags;if(o.settings)S.settings={...S.settings,...o.settings};if(o.study)S.study={...clone(DEF.study),...o.study};ensureStudy();save();closeModal();applyTheme();renderSettings();render();toast('Dati importati')}catch(e){toast('Testo non valido')}}};
+ $('#wipe').onclick=async()=>{if(await ask('Azzerare tutto?','Sessioni, tag e impostazioni verranno cancellati.',[['ok','Azzera','dan'],['cancel','Annulla']])==='ok'){stopAmbient();wakeOff();S=clone(DEF);ensureStudy();save();applyTheme();renderSettings();render()}};
 }
 function applyTheme(){
  const th=S.settings.theme==='auto'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):S.settings.theme;
@@ -833,21 +887,349 @@ function applyTheme(){
  document.querySelector('meta[name=theme-color]').content=th==='dark'?'#0c2236':'#d9e8f3';
 }
 
+/* ---------- STUDIO ---------- */
+const ST_NAMES=['Chiusa','Letta','Ripassata','La so scrivere'];
+const ST_COL=['#9aa8b6','#2a78c2','#e9a320','#e8463a'];
+const INT=[1,3,7,14,30]; // giorni tra un ripasso e l'altro, per livello
+const GR=['Non la sapevo','Così così','La sapevo'];
+const LV=[[0,'Alice'],[6,'Sardina'],[18,'Sgombro'],[36,'Tonnetto'],[60,'Tonno'],[90,'Tonno rosso']];
+function mkChapters(n,old){const a=[];for(let i=1;i<=n;i++){const o=old&&old[i-1];a.push(o?{...o,n:i}:{n:i,title:'',state:0})}return a}
+const Y=()=>S.study;
+function ensureStudy(){
+ const y=S.study;if(!y.start)y.start=midnight(Date.now());
+ if(!Array.isArray(y.chapters)||!y.chapters.length)y.chapters=mkChapters(19);
+ ['questions','sims','log'].forEach(k=>{if(!Array.isArray(y[k]))y[k]=[]});if(!y.ratings)y.ratings={};
+ if(!y.tag||!S.tags.some(t=>t.id===y.tag)){const f=S.tags.find(t=>/studi/i.test(t.name));y.tag=f?f.id:null}
+ if(!y.curCh||y.curCh>y.chapters.length)y.curCh=1;if(!y.baitCh||y.baitCh>y.chapters.length)y.baitCh=y.curCh;
+}
+const isStudy=s=>!!s&&!!S.study.tag&&s.tag===S.study.tag;
+const chName=n=>{const c=Y().chapters[(n||1)-1];return 'Cap. '+n+(c&&c.title?' · '+c.title:'')};
+const examTs=()=>{const t=new Date(Y().examDate+'T09:00').getTime();return isNaN(t)?addDays(Date.now(),120):t};
+const daysLeft=()=>Math.max(0,Math.round((midnight(examTs())-midnight(Date.now()))/DAY));
+const dLong=ts=>new Date(ts).toLocaleDateString('it-IT',{day:'numeric',month:'long',year:'numeric'});
+function logEv(o){const L=Y().log;L.push({ts:Date.now(),...o});if(L.length>3000)L.splice(0,L.length-3000)}
+const dueQs=()=>{const e=addDays(midnight(Date.now()),1);return Y().questions.filter(q=>q.due<e)};
+function gradeQ(q,g,extra){const from=q.box;if(g===0)q.box=0;else if(g===2)q.box=Math.min(INT.length-1,q.box+1);q.due=addDays(midnight(Date.now()),g===0?1:INT[q.box]);q.last=Date.now();logEv({type:'review',qid:q.id,ch:q.ch,g,from,to:q.box,...(extra||{})})}
+// se l'esca nomina un capitolo ("cap. 8 …") lo usa, altrimenti resta quello appena studiato
+function baitChOf(txt,dflt){const m=String(txt).match(/cap(?:itolo)?\.?\s*(\d{1,2})/i),n=m?+m[1]:0;return n>=1&&n<=Y().chapters.length?n:dflt}
+const boxLabel=q=>q.due<addDays(midnight(Date.now()),1)?'⏳ In scadenza oggi · livello '+(q.box+1)+'/5':'Prossimo ripasso '+dShort(q.due)+' · livello '+(q.box+1)+'/5';
+
+/* promesse: sere di studio fatte rispetto a quelle previste, settimana per settimana */
+function weekStart(ts){const m=midnight(ts);return addDays(m,-((new Date(m).getDay()+6)%7))}
+function promiseWeeks(n){
+ const days=new Set(S.sessions.filter(s=>isStudy(s)&&!s.abandoned).map(s=>dayKey(s.start)));
+ const cur=weekStart(Date.now()),st=weekStart(Y().start),tgt=Y().perWeek,out=[];
+ for(let i=n-1;i>=0;i--){
+  const a=addDays(cur,-7*i);if(a<st){out.push(null);continue}
+  let c=0;for(let d=0;d<7;d++)if(days.has(dayKey(addDays(a,d))))c++;
+  const current=i===0,kept=c>=tgt,buoy=!kept&&!current&&tgt>1&&c===tgt-1;
+  out.push({a,c,tgt,kept,buoy,current});
+ }
+ return out;
+}
+function weekStreak(){const w=promiseWeeks(80);let s=0;for(let i=w.length-1;i>=0;i--){const x=w[i];if(!x)break;if(x.current&&!x.kept)continue;if(x.kept||x.buoy)s++;else break}return s}
+function level(){const n=S.sessions.filter(s=>isStudy(s)&&!s.abandoned).length;let i=0;while(i<LV.length-1&&n>=LV[i+1][0])i++;const nx=LV[i+1];return{n,i,name:LV[i][1],next:nx?nx[1]:null,need:nx?nx[0]:null,from:LV[i][0]}}
+function fishSvg(i){
+ const cols=['#b9c6d2','#8fb0c8','#4f8db8','#2f6ea3','#1d4f7a','#b3262b'],c=cols[i],sc=(.55+i*.09).toFixed(2);
+ return `<svg viewBox="0 0 120 60" aria-hidden="true"><g transform="translate(60 30) scale(${sc}) translate(-60 -30)"><path d="M52 15l9-11 7 13M54 45l8 10 6-11" fill="${c}"/><path d="M12 30C28 10 74 7 98 26l15-13-5 17 5 17-15-13C74 53 28 50 12 30z" fill="${c}"/><path d="M18 33c22 8 54 9 78-3" stroke="#fff" stroke-opacity=".5" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="29" cy="27" r="3.6" fill="#fff"/><circle cx="29.8" cy="27" r="1.9" fill="#12305a"/>${i===5?'<path d="M64 0l3 6.2 6.8 1-5 4.7 1.2 6.7-6-3.2-6 3.2 1.2-6.7-5-4.7 6.8-1z" fill="#f2b33d" stroke="#c98a12" stroke-width=".8"/>':''}</g></svg>`;
+}
+function shelfCan(st){
+ const top=st===0?'<ellipse cx="20" cy="17" rx="14" ry="3.5" fill="#e1e5e9" stroke="#a9b1b9" stroke-width=".8"/><path d="M17 15.5h6" stroke="#a9b1b9" stroke-width="1.6" stroke-linecap="round"/>'
+  :st===1?'<ellipse cx="20" cy="17" rx="14" ry="3.5" fill="#f2b896"/><path d="M7 16.5Q14 4 33 9" fill="none" stroke="#a9b1b9" stroke-width="2.4" stroke-linecap="round"/>'
+  :'<ellipse cx="20" cy="17" rx="14" ry="3.5" fill="#f2b896"/><path d="M18 22l.8-8-3.6-5 4.8 2.6 4.8-2.6-3.6 5 .8 8z" fill="#5a7d97"/>';
+ const star=st===3?'<path d="M31 1l2.2 4.4 4.8.7-3.5 3.4.8 4.8-4.3-2.3-4.3 2.3.8-4.8-3.5-3.4 4.8-.7z" fill="#f2b33d" stroke="#c98a12" stroke-width=".6"/>':'';
+ return `<svg viewBox="0 0 40 40" aria-hidden="true">${top}${BODY}<path d="M6 22a14 3.5 0 0 0 28 0v6a14 3.5 0 0 1-28 0z" fill="${ST_COL[st]}"/>${star}</svg>`;
+}
+function pace(){
+ const ch=Y().chapters,tot=ch.length*3,done=ch.reduce((a,c)=>a+c.state,0),ex=examTs(),st=Y().start,now=Date.now();
+ const left=daysLeft(),target=addDays(midnight(ex),-14),leftT=Math.round((target-midnight(now))/DAY);
+ const useT=leftT>0,daysFor=useT?leftT:left,eve=Math.max(1,Math.round(daysFor*Y().perWeek/7));
+ const frac=Math.max(0,Math.min(1,(now-st)/Math.max(DAY,(useT?target:ex)-st)));
+ return{tot,done,left,target:useT?target:ex,useT,eve,perWeek:(tot-done)/eve*Y().perWeek,diff:done-tot*frac,
+  read:ch.filter(c=>c.state>=1).length,rev:ch.filter(c=>c.state>=2).length,write:ch.filter(c=>c.state>=3).length};
+}
+function paceStatus(P){if(P.done>=P.tot)return'🏁 Scaffale completo';if(P.diff>=1)return'✅ Avanti di '+Math.round(P.diff)+(Math.round(P.diff)===1?' passo':' passi');if(P.diff>-1)return'✅ In linea col piano';const d=Math.round(-P.diff);return'⚠️ Indietro di '+d+(d===1?' passo':' passi')}
+const n1=x=>{const r=Math.round(x*10)/10;return String(r).replace('.',',')};
+
+/* timer: esca, scatoletta piccola, capitolo, domande in scadenza */
+function renderStudyBits(){
+ const t=T(),y=Y(),fresh=!t.running&&t.mode==='pomo'&&t.phase==='focus'&&t.remaining==null;
+ const bc=$('#baitCard');
+ if(fresh&&y.bait&&y.tag){bc.innerHTML=`<small>🎣 Riparti da qui</small><p>${esc(y.bait)}</p><small>${esc(chName(y.baitCh))}</small><button class="btn pri" id="baitGo">Apri la scatola</button>`;bc.style.display='';$('#baitGo').onclick=baitStart}
+ else{bc.style.display='none';bc.innerHTML=''}
+ $('#miniBtn').style.display=fresh?'':'none';$('#miniBtn span').textContent='Solo '+S.settings.mini+' min';
+ $('#chBtn').style.display=y.tag&&t.tag===y.tag&&t.mode==='pomo'?'':'none';$('#chBtn span').textContent='Cap. '+y.curCh;
+ const d=dueQs().length;$('#dueBtn').style.display=d&&!t.running?'':'none';$('#dueBtn span').textContent=d+(d===1?' domanda':' domande');
+ const nb=$('#dueBadge');nb.textContent=d>99?'99+':d;nb.classList.toggle('on',d>0);
+}
+function baitStart(){
+ const t=T(),y=Y();if(t.running)return;
+ if(y.tag)t.tag=y.tag;y.curCh=y.baitCh||y.curCh;t.task=y.bait;S.settings.pulled=true;
+ if(t.mode!=='pomo'){t.mode='pomo';t.acc=0;setPhase('focus')}
+ save();pop();startNow();
+}
+function chPick(){
+ const y=Y();
+ openModal(`<h3>Su quale capitolo?</h3><div class="shelf" style="margin-top:10px">${y.chapters.map(c=>`<button data-ch="${c.n}" class="${c.n===y.curCh?'cur':''}" aria-label="${esc(chName(c.n))}">${shelfCan(c.state)}${c.n}</button>`).join('')}</div><button class="add" id="toShelf" style="margin-top:12px">Apri lo scaffale</button>`);
+ sheet.querySelectorAll('[data-ch]').forEach(b=>b.onclick=()=>{y.curCh=+b.dataset.ch;save();closeModal();render();toast(chName(y.curCh))});
+ $('#toShelf').onclick=()=>{closeModal();go('study')};
+}
+
+/* fine focus: richiamo attivo + esca, oppure "chiudo o continuo" dopo la scatoletta piccola */
+function afterFocus(ses,o){
+ o=o||{};const y=Y();
+ const goOn=()=>{const t=T();setPhase('focus');t.task=t.task||y.bait;startNow()};
+ if(!(ses&&isStudy(ses)&&!ses.abandoned&&S.settings.recall)){
+  if(!o.mini){noteSheet(ses);return}
+  openModal(`<h3>Scatoletta piccola aperta! 🐟</h3><p class="mut" style="margin:0 0 10px">Promessa mantenuta: ${ses?fmtShort(ses.dur):S.settings.mini+'m'}. Ti fermi qui o continui?</p>${S.settings.askNote&&ses?'<textarea id="nn" class="note" placeholder="Com\'è andata?"></textarea>':''}<div class="btns"><button class="btn" data-x="stop">Chiudo qui</button><button class="btn pri" data-x="go">Continuo: ${S.settings.focus} min</button></div>`);
+  sheet.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>{const n=$('#nn');if(n&&ses&&n.value.trim()){ses.note=n.value.trim();save()}closeModal();refreshViews();if(b.dataset.x==='go')goOn();else toast('Ben fatto. A domani 🐟')});
+  return;
+ }
+ const ch=ses.ch||y.curCh;
+ openModal(`<h3>${o.mini?'Scatoletta piccola aperta! 🐟':'Pausa con richiamo 🧠'}</h3>
+ <p class="mut" style="margin:0 0 8px;font-size:15px">Libro chiuso: scrivi a memoria cosa hai appena studiato.${o.after?' La pausa parte quando hai finito.':''}</p>
+ <div class="field"><label>Capitolo</label><select id="afCh">${y.chapters.map(c=>`<option value="${c.n}" ${c.n===ch?'selected':''}>${esc(chName(c.n))}</option>`).join('')}</select></div>
+ <textarea id="afR" class="note" placeholder="3 righe a memoria: concetti, termini, collegamenti…"></textarea>
+ <div class="field"><label>🎣 La prossima volta riparto da…</label><input type="text" id="afB" maxlength="90" value="${esc(y.bait)}" placeholder="es. cap. 8, par. 8.3: neurotrasmettitori"></div>
+ <div class="btns">${o.mini?`<button class="btn" data-x="stop">Chiudo qui</button><button class="btn pri" data-x="go">Continuo: ${S.settings.focus} min</button>`:'<button class="btn" data-x="skip">Salta</button><button class="btn pri" data-x="save">Salva</button>'}</div>`);
+ sheet.dataset.lock='1';
+ onClose=()=>{if(o.after)o.after()};
+ sheet.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>{
+  const x=b.dataset.x;let r='';
+  if(x!=='skip'){r=$('#afR').value.trim();const n=+$('#afCh').value;ses.ch=n;y.curCh=n;if(r){ses.note=r;ses.recall=true}const bt=$('#afB').value.trim();if(bt!==y.bait||n!==y.baitCh){y.bait=bt;y.baitCh=baitChOf(bt,n)}}
+  save();
+  if(x==='go'){onClose=null;closeModal();refreshViews();goOn();return}
+  closeModal();refreshViews();
+  toast(r?'Richiamo salvato 🧠':x==='stop'?'Ben fatto. A domani 🐟':'Buona pausa');
+ });
+ setTimeout(()=>{const a=$('#afR');if(a)a.focus()},350);
+}
+
+/* vista Studio */
+function renderStudy(){
+ const el=$('#v-study'),y=Y(),P=pace(),L=level(),W=promiseWeeks(8),cw=W[W.length-1],due=dueQs().length,streak=weekStreak();
+ const ls=y.sims[y.sims.length-1];
+ el.innerHTML=`<div class="hdr"><h2 style="margin:0">Studio</h2><button class="ic sm" id="stCfg" aria-label="Impostazioni dello studio" style="font-size:20px">⚙</button></div>
+ <p class="mut" style="margin:0 0 14px;font-weight:600">${esc(y.examName)} · ${dLong(examTs())} · <b style="color:var(--ink)">${P.left===0?'è oggi!':'mancano '+P.left+(P.left===1?' giorno':' giorni')}</b></p>
+ ${y.tag?'':'<div class="card" style="border:2px dashed var(--warm)"><b>Scegli il tag dello studio</b><p class="mut" style="margin:4px 0 0;font-size:14px">Serve per riconoscere le sessioni di studio. Tocca ⚙.</p></div>'}
+ <div class="card"><div class="lvl">${fishSvg(L.i)}<div style="flex:1;min-width:0"><span class="lab">Il tuo tonno</span><b style="font-size:24px;font-weight:800;line-height:1.1">${L.name}</b><div class="goalbar" style="width:100%;margin:6px 0 3px"><i style="width:${L.need?Math.round((L.n-L.from)/(L.need-L.from)*100):100}%"></i></div><small class="mut" style="font-size:13px">${L.need?`${L.n} scatolette di studio · ancora ${L.need-L.n} per diventare ${L.next}`:L.n+' scatolette: livello massimo 🏆'}</small></div></div>
+  <h3 style="margin:16px 0 2px">Promesse mantenute</h3><p class="mut" style="margin:0;font-size:14px">Questa settimana <b style="color:var(--ink)">${cw?cw.c:0}/${y.perWeek} sere</b> · serie ${streak} ${streak===1?'settimana':'settimane'} · 🛟 una sera di tolleranza a settimana</p>
+  <div class="weeks">${W.map(w=>!w?'<span style="opacity:.3"></span>':`<span class="${w.kept?'k':w.buoy?'b':''} ${w.current?'c':''}" title="Settimana del ${dShort(w.a)}">${w.kept?'✓':w.buoy?'🛟':w.current?w.c+'/'+w.tgt:w.c}</span>`).join('')}</div></div>
+ <div class="card"><div class="hdr" style="margin:0"><h3 style="margin:0">🎣 Esca</h3><button class="chip" id="baitEd">Modifica</button></div>
+  <p style="margin:6px 0 0;font-weight:600">${y.bait?esc(y.bait)+`<br><small class="mut">${esc(chName(y.baitCh))}</small>`:'<span class="mut" style="font-weight:500">Nessuna esca. La lasci a fine sessione, nella pausa con richiamo.</span>'}</p>
+  <div class="btns" style="margin-top:12px"><button class="btn pri" id="stGo">Apri la scatola</button><button class="btn" id="stMini">🥫 Solo ${S.settings.mini} min</button></div></div>
+ <div class="card"><h3>Ritmo</h3><div class="goalbar" style="width:100%;height:12px;margin:0"><i style="width:${Math.round(P.done/P.tot*100)}%"></i></div>
+  <p style="margin:8px 0 0;font-weight:800">${paceStatus(P)}</p>
+  <p class="mut" style="margin:2px 0 0;font-size:14px">${P.done}/${P.tot} passi. ${P.done<P.tot?`Per finire lo scaffale entro il ${dShort(P.target)} servono <b style="color:var(--ink)">${n1(P.perWeek)} passi a settimana</b> (${P.eve} sere rimaste).${P.useT?' Le ultime 2 settimane restano per le simulazioni.':''}`:'Ora ripasso e simulazioni.'}</p>
+  <div class="stat3"><div><b>${P.read}</b><small>letti</small></div><div><b>${P.rev}</b><small>ripassati</small></div><div><b>${P.write}</b><small>so scrivere</small></div></div></div>
+ <h3 class="sec">Scaffale</h3>
+ <div class="card"><div class="shelf">${y.chapters.map(c=>`<button data-ch="${c.n}" class="${c.n===y.curCh?'cur':''}" aria-label="${esc(chName(c.n))}: ${ST_NAMES[c.state]}">${shelfCan(c.state)}${c.n}</button>`).join('')}</div>
+  <div class="legend">${ST_NAMES.map((s,i)=>`<span><i style="background:${ST_COL[i]}"></i>${s}</span>`).join('')}</div>
+  <p class="mut" style="font-size:13px;margin:6px 0 0">Un passo = un capitolo che avanza di uno stato. Tocca una scatoletta per aggiornarla.</p></div>
+ <h3 class="sec">Domande in scadenza</h3>
+ <div class="card"><div class="duo"><div><span class="lab">Da ripassare oggi</span><b>${due}</b></div><div><span class="lab">In archivio</span><b>${y.questions.length}</b></div></div>
+  <div class="btns"><button class="btn pri" id="qRev" ${due?'':'disabled'}>⏳ Ripassa</button><button class="btn" id="qSim">🧪 Simula l'esame</button></div>
+  <div class="btns" style="margin-top:8px"><button class="btn" id="qNew">+ Domanda</button><button class="btn" id="qImp">Importa dal tutor</button></div>
+  ${ls?`<p class="mut" style="font-size:13px;margin:12px 0 0">Ultima simulazione: ${dShort(ls.ts)} · ${ls.items.filter(i=>i.g===2).length}/${ls.items.length} sapute</p>`:'<p class="mut" style="font-size:13px;margin:12px 0 0">Ogni domanda torna a 1, 3, 7, 14 e 30 giorni se la sai; se no torna domani.</p>'}</div>
+ <div class="card"><h3>📤 Diario per il tutor</h3><p class="mut" style="font-size:14px;margin:0">Il riepilogo della serata, pronto da incollare nel log del tutor su Drive.</p><button class="btn pri" id="diary" style="width:100%;margin-top:12px">Prepara il diario</button></div>`;
+ $('#stCfg').onclick=studyConfig;$('#baitEd').onclick=baitEdit;
+ $('#stGo').onclick=()=>{go('timer');baitStart()};$('#stMini').onclick=()=>{const t=T();if(y.tag)t.tag=y.tag;go('timer');startMini()};
+ el.querySelectorAll('[data-ch]').forEach(b=>b.onclick=()=>chapterSheet(+b.dataset.ch));
+ $('#qRev').onclick=()=>reviewRun();$('#qSim').onclick=simRun;$('#qNew').onclick=()=>qEdit(null,y.curCh);$('#qImp').onclick=qImport;$('#diary').onclick=diarySheet;
+}
+function baitEdit(){
+ const y=Y();
+ openModal(`<h3>🎣 Esca</h3><p class="mut" style="margin:0 0 6px;font-size:14px">La prima azione concreta della prossima sessione.</p><div class="field"><label>Riparto da…</label><input type="text" id="beT" maxlength="90" value="${esc(y.bait)}" placeholder="es. cap. 8, par. 8.3: neurotrasmettitori"></div><div class="field"><label>Capitolo</label><select id="beC">${y.chapters.map(c=>`<option value="${c.n}" ${c.n===y.baitCh?'selected':''}>${esc(chName(c.n))}</option>`).join('')}</select></div><div class="btns"><button class="btn" id="beX">Annulla</button><button class="btn pri" id="beS">Salva</button></div>`);
+ $('#beX').onclick=closeModal;
+ $('#beS').onclick=()=>{y.bait=$('#beT').value.trim();y.baitCh=+$('#beC').value;save();closeModal();refreshViews()};
+}
+function chapterSheet(n){
+ const y=Y(),c=y.chapters[n-1];if(!c)return;
+ const rec=S.sessions.filter(s=>s.ch===n&&s.note&&isStudy(s)).sort((a,b)=>b.start-a.start),qs=y.questions.filter(q=>q.ch===n);
+ openModal(`<h3>Capitolo ${n}</h3>
+ <div class="field"><label>Titolo</label><input type="text" id="cT" maxlength="60" value="${esc(c.title)}" placeholder="es. Il neurone e la sinapsi"></div>
+ <span class="lab">Stato</span><div class="statepick">${ST_NAMES.map((s,i)=>`<button data-s="${i}" class="${c.state===i?'on':''}">${s}</button>`).join('')}</div>
+ <div class="btns" style="margin-top:8px"><button class="btn pri" id="cGo">📖 Studia questo</button><button class="btn" id="cQ">+ Domanda</button></div>
+ <h3 style="margin-top:18px">Domande (${qs.length})</h3>${qs.length?`<div class="list">${qs.map(q=>`<div class="it" data-q="${q.id}"><div class="g">${esc(q.q)}<small>${boxLabel(q)}</small></div></div>`).join('')}</div>`:'<p class="mut" style="font-size:14px;margin:0">Ancora nessuna. Aggiungine una o importale dal tutor.</p>'}
+ <h3 style="margin-top:18px">Righe scritte a memoria (${rec.length})</h3>${rec.length?rec.slice(0,15).map(s=>`<div class="reveal"><small class="mut">${dShort(s.start)}</small>\n${esc(s.note)}</div>`).join(''):'<p class="mut" style="font-size:14px;margin:0">Compariranno qui dopo ogni pausa con richiamo.</p>'}
+ <div class="btns"><button class="btn" id="cX">Chiudi</button></div>`);
+ const keep=()=>{const v=$('#cT');if(v&&v.value.trim()!==c.title){c.title=v.value.trim();save()}};
+ onClose=()=>{refreshViews()};
+ sheet.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{const i=+b.dataset.s;if(i===c.state)return;logEv({type:'state',ch:n,from:c.state,to:i});c.state=i;save();sheet.querySelectorAll('[data-s]').forEach(x=>x.classList.toggle('on',x===b));if(i===3)toast('🌟 Capitolo fissato!');else if(i===1)toast('Capitolo letto 📖')});
+ $('#cGo').onclick=()=>{keep();y.curCh=n;if(y.tag)T().tag=y.tag;save();onClose=null;closeModal();go('timer');render();toast(chName(n))};
+ $('#cQ').onclick=()=>{keep();onClose=null;qEdit(null,n,()=>chapterSheet(n))};
+ sheet.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{keep();onClose=null;qEdit(b.dataset.q,n,()=>chapterSheet(n))});
+ $('#cX').onclick=()=>{keep();closeModal()};
+ $('#cT').onchange=keep;
+}
+function qEdit(id,ch,back){
+ const y=Y(),q=id?y.questions.find(x=>x.id===id):null;if(id&&!q)return;
+ const cc=q?q.ch:(ch||y.curCh);
+ openModal(`<h3>${q?'Modifica domanda':'Nuova domanda d\'esame'}</h3>
+ <div class="field"><label>Capitolo</label><select id="qC">${y.chapters.map(c=>`<option value="${c.n}" ${c.n===cc?'selected':''}>${esc(chName(c.n))}</option>`).join('')}</select></div>
+ <div class="field"><label>Domanda</label><textarea id="qQ" class="note" placeholder="es. Descrivi il potenziale d'azione e le sue fasi">${q?esc(q.q):''}</textarea></div>
+ <div class="field"><label>Appunti per la risposta (facoltativo)</label><textarea id="qA" class="note" placeholder="I punti chiave da ritrovare nella risposta">${q?esc(q.a||''):''}</textarea></div>
+ ${q?`<p class="mut" style="font-size:13px;margin:0">${boxLabel(q)}</p>`:''}
+ <div class="btns">${q?'<button class="btn dan" id="qD">Elimina</button>':'<button class="btn" id="qX">Annulla</button>'}<button class="btn pri" id="qS">Salva</button></div>`);
+ const done=()=>{closeModal();if(back)back();else refreshViews()};
+ if(q)$('#qD').onclick=()=>{y.questions=y.questions.filter(x=>x.id!==id);save();toast('Domanda eliminata');done()};else $('#qX').onclick=done;
+ $('#qS').onclick=()=>{const t=$('#qQ').value.trim();if(!t){toast('Scrivi la domanda');return}
+  const o=q||{id:uid(),box:0,due:midnight(Date.now()),created:Date.now()};Object.assign(o,{ch:+$('#qC').value,q:t,a:$('#qA').value.trim()});
+  if(!q)y.questions.push(o);save();toast(q?'Domanda aggiornata':'Domanda aggiunta: in ripasso da oggi');done()};
+}
+function qImport(){
+ const y=Y(),req=`Scrivimi 8 domande d'esame aperte sul capitolo ${y.curCh} di ${y.examName}, come quelle dello scritto (3 domande aperte). Formato: una per riga, «${y.curCh}: domanda | punti chiave della risposta». Nessun altro testo.`;
+ openModal(`<h3>Importa domande</h3><p class="mut" style="font-size:14px;margin:0 0 8px">Una per riga, col numero del capitolo davanti. Gli appunti, se ci sono, dopo la barra verticale:<br><code>7: Descrivi il potenziale d'azione | soglia, depolarizzazione…</code></p>
+ <button class="btn" id="qiReq" style="width:100%;margin-bottom:8px">📋 Copia la richiesta per il tutor</button>
+ <textarea id="qi" class="note" style="min-height:170px" placeholder="Incolla qui le domande"></textarea><div class="btns"><button class="btn" id="qiX">Annulla</button><button class="btn pri" id="qiG">Importa</button></div>`);
+ $('#qiReq').onclick=()=>navigator.clipboard.writeText(req).then(()=>toast('Richiesta copiata: incollala al tutor'),()=>toast('Copia non riuscita'));
+ $('#qiX').onclick=closeModal;
+ $('#qiG').onclick=()=>{
+  const max=y.chapters.length;let n=0;
+  $('#qi').value.split('\n').forEach(line=>{
+   let s=line.trim().replace(/^[-*•]\s*/,'');if(!s)return;let ch=y.curCh;
+   const m=s.match(/^(?:cap(?:itolo)?\.?\s*)?(\d{1,2})\s*[:.)\-–]\s*(.+)$/i);if(m){ch=Math.min(max,Math.max(1,+m[1]));s=m[2]}
+   const [qq,...rest]=s.split('|');if(!qq.trim())return;
+   y.questions.push({id:uid(),ch,q:qq.trim(),a:rest.join('|').trim(),box:0,due:midnight(Date.now()),created:Date.now()});n++;
+  });
+  if(!n){toast('Nessuna domanda trovata');return}
+  save();closeModal();refreshViews();toast(n+(n===1?' domanda importata':' domande importate'));
+ };
+}
+function reviewRun(list){
+ list=list||dueQs().sort((a,b)=>a.box-b.box||a.due-b.due);
+ if(!list.length){toast('Nessuna domanda in scadenza 🎉');return}
+ let i=0;const res=[0,0,0];
+ const show=()=>{
+  if(i>=list.length||!list[i]){const tot=res[0]+res[1]+res[2];openModal(`<h3>Ripasso finito 🐟</h3><p class="mut">${tot} ${tot===1?'domanda':'domande'}: ${res[2]} sapute, ${res[1]} così così, ${res[0]} da rivedere domani.</p><div class="btns"><button class="btn pri" id="rvOk">Chiudi</button></div>`);$('#rvOk').onclick=closeModal;onClose=refreshViews;save();return}
+  const q=list[i];
+  openModal(`<div class="hdr" style="margin:0"><span class="mut" style="font-weight:700">${i+1}/${list.length} · ${esc(chName(q.ch))}</span><button class="chip" id="rvEnd">Fine</button></div><div class="qcard">${esc(q.q)}</div><textarea class="note" id="rvA" placeholder="Rispondi a memoria, anche per punti…"></textarea><div id="rvR"></div><button class="btn pri" id="rvShow" style="width:100%;margin-top:10px">Confronta con gli appunti</button>`);
+  sheet.dataset.lock='1';
+  $('#rvEnd').onclick=()=>{i=list.length;show()};
+  $('#rvShow').onclick=()=>{$('#rvShow').remove();
+   $('#rvR').innerHTML=`<div class="reveal">${q.a?esc(q.a):'<span class="mut">Nessun appunto salvato: confronta col libro.</span>'}</div><p class="mut" style="margin:6px 0 0;font-size:14px">Com'è andata?</p><div class="grade"><button class="btn" data-g="0">Non la sapevo</button><button class="btn" data-g="1">Così così</button><button class="btn pri" data-g="2">La sapevo</button></div>`;
+   sheet.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{const g=+b.dataset.g;gradeQ(q,g);res[g]++;save();i++;show()})};
+ };
+ show();
+}
+function pickSim(){
+ const qs=[...Y().questions];if(qs.length<=3)return qs;
+ const sorted=qs.map(q=>[Math.random()*(1+INT.length-q.box),q]).sort((a,b)=>b[0]-a[0]).map(x=>x[1]);
+ const out=[],used=new Set();for(const q of sorted){if(!used.has(q.ch)){out.push(q);used.add(q.ch)}if(out.length===3)break}
+ for(const q of sorted){if(out.length===3)break;if(!out.includes(q))out.push(q)}
+ return out;
+}
+let simT=null;
+function simRun(){
+ const qs=pickSim();if(qs.length<3){toast('Servono almeno 3 domande in archivio');return}
+ const dur=Y().simMin*60,t0=Date.now(),end=t0+dur*1000;
+ openModal(`<div class="simtime"><span>🧪 Simulazione</span><span id="simClock">${fmt(dur)}</span></div><p class="mut" style="font-size:14px;margin:2px 0 6px">3 domande aperte, ${Y().simMin} minuti. Libro chiuso, come all'esame.</p>
+ ${qs.map((q,k)=>`<div class="field"><label>${k+1}. ${esc(chName(q.ch))}</label><div class="qcard" style="font-size:16px;margin-top:0">${esc(q.q)}</div><textarea class="note" data-k="${k}" style="min-height:150px" placeholder="La tua risposta"></textarea></div>`).join('')}
+ <div class="btns"><button class="btn dan" id="simQuit">Abbandona</button><button class="btn pri" id="simDone">Consegna</button></div>`);
+ sheet.dataset.lock='1';
+ let over=false;
+ const finish=()=>{if(over)return;over=true;clearInterval(simT);const a=[...sheet.querySelectorAll('textarea[data-k]')].map(x=>x.value.trim());simReview(qs,a,Math.round((Date.now()-t0)/1000))};
+ clearInterval(simT);simT=setInterval(()=>{const c=$('#simClock');if(!c||!modal.classList.contains('on')){clearInterval(simT);return}const l=(end-Date.now())/1000;c.textContent=fmt(l);if(l<=0){if(S.settings.chime){ensureAudio();chime()}toast('Tempo scaduto: consegna');finish()}},500);
+ $('#simDone').onclick=finish;
+ let quitArm=0;
+ $('#simQuit').onclick=e=>{const b=e.currentTarget;if(Date.now()-quitArm<4000){over=true;clearInterval(simT);closeModal();toast('Simulazione abbandonata');return}quitArm=Date.now();b.textContent='Tocca ancora: perdi le risposte';setTimeout(()=>{if(b.isConnected)b.textContent='Abbandona'},4000)};
+}
+function simReview(qs,ans,used){
+ const gs=qs.map(()=>null);
+ openModal(`<h3>Correzione 🧪</h3><p class="mut" style="margin:0 0 6px;font-size:14px">Tempo usato: ${fmtMin(Math.max(1,Math.round(used/60)))}. Confronta ogni risposta con gli appunti e valutala.</p>
+ ${qs.map((q,k)=>`<div class="card" style="background:var(--track);box-shadow:none;padding:14px"><b>${k+1}. ${esc(q.q)}</b><p class="mut" style="font-size:13px;margin:2px 0 6px">${esc(chName(q.ch))}</p><span class="lab">La tua risposta</span><div style="white-space:pre-wrap;font-size:15px;margin-bottom:6px">${ans[k]?esc(ans[k]):'<span class="mut">(vuota)</span>'}</div><div class="reveal" style="background:var(--card)">${q.a?esc(q.a):'<span class="mut">Nessun appunto: confronta col libro.</span>'}</div><div class="grade" data-k="${k}">${GR.map((l,g)=>`<button class="btn" style="background:var(--card)" data-g="${g}">${l}</button>`).join('')}</div></div>`).join('')}
+ <div class="btns"><button class="btn pri" id="srS">Salva la simulazione</button></div>`);
+ sheet.dataset.lock='1';
+ sheet.querySelectorAll('.grade').forEach(gr=>gr.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{gs[+gr.dataset.k]=+b.dataset.g;gr.querySelectorAll('[data-g]').forEach(x=>x.classList.toggle('on',x===b))}));
+ $('#srS').onclick=()=>{
+  if(gs.some(g=>g==null)){toast('Valuta tutte e 3 le risposte');return}
+  const sim={id:uid(),ts:Date.now(),used,items:qs.map((q,k)=>({qid:q.id,ch:q.ch,q:q.q,ans:ans[k],g:gs[k]}))};
+  Y().sims.push(sim);qs.forEach((q,k)=>gradeQ(q,gs[k],{sim:sim.id}));save();closeModal();refreshViews();
+  const ok=gs.filter(g=>g===2).length;toast(ok===3?'3 su 3: tonno da esame! 🐟':ok+' su 3 sapute');
+ };
+}
+function studyConfig(){
+ const y=Y();let pw=y.perWeek;
+ openModal(`<h3>Impostazioni dello studio</h3>
+ <div class="field"><label>Esame</label><input type="text" id="scN" maxlength="60" value="${esc(y.examName)}"></div>
+ <div class="g2"><div class="field"><label>Data esame</label><input type="date" id="scD" value="${esc(y.examDate)}"></div><div class="field"><label>Inizio del piano</label><input type="date" id="scS" value="${dayKey(y.start)}"></div></div>
+ <div class="g2"><div class="field"><label>Capitoli</label><input type="number" id="scC" min="1" max="60" value="${y.chapters.length}" inputmode="numeric"></div><div class="field"><label>Simulazione (min)</label><input type="number" id="scM" min="10" max="240" value="${y.simMin}" inputmode="numeric"></div></div>
+ <div class="field"><label>Tag delle sessioni di studio</label><select id="scT"><option value="">Nessuno</option>${S.tags.map(g=>`<option value="${g.id}" ${g.id===y.tag?'selected':''}>${esc(g.name)}</option>`).join('')}</select></div>
+ <div class="set" style="border:0"><div>Sere di studio a settimana<small>Le promesse da mantenere</small></div><div class="step"><button id="pwM">−</button><b id="pwV">${pw}</b><button id="pwP">+</button></div></div>
+ <div class="btns"><button class="btn" id="scX">Annulla</button><button class="btn pri" id="scO">Salva</button></div>`);
+ $('#pwM').onclick=()=>{pw=Math.max(1,pw-1);$('#pwV').textContent=pw};$('#pwP').onclick=()=>{pw=Math.min(7,pw+1);$('#pwV').textContent=pw};
+ $('#scX').onclick=closeModal;
+ $('#scO').onclick=()=>{
+  const d=$('#scD').value,s=new Date($('#scS').value+'T00:00').getTime(),n=Math.min(60,Math.max(1,+$('#scC').value||19));
+  if(!d){toast('Inserisci la data dell\'esame');return}
+  y.examName=$('#scN').value.trim()||'Esame';y.examDate=d;if(!isNaN(s))y.start=s;y.simMin=Math.min(240,Math.max(10,+$('#scM').value||60));
+  y.tag=$('#scT').value||null;y.perWeek=pw;if(n!==y.chapters.length)y.chapters=mkChapters(n,y.chapters);
+  ensureStudy();save();closeModal();refreshViews();toast('Piano aggiornato');
+ };
+}
+
+/* diario per il tutor */
+function diaryDays(){
+ const set=new Set([dayKey(Date.now())]),from=addDays(midnight(Date.now()),-30);
+ S.sessions.forEach(s=>{if(isStudy(s)&&s.start>=from)set.add(dayKey(s.start))});Y().log.forEach(e=>{if(e.ts>=from)set.add(dayKey(e.ts))});
+ return [...set].sort().reverse();
+}
+function diaryText(dk){
+ const a=new Date(dk+'T00:00').getTime(),b=addDays(a,1),y=Y(),P=pace(),W=promiseWeeks(1)[0];
+ const ses=S.sessions.filter(s=>isStudy(s)&&s.start>=a&&s.start<b).sort((x,z)=>x.start-z.start),ev=y.log.filter(e=>e.ts>=a&&e.ts<b);
+ const done=ses.filter(s=>!s.abandoned),min=Math.round(ses.reduce((x,s)=>x+s.dur,0)/60);
+ const hm=ts=>{const d=new Date(ts);return pad(d.getHours())+':'+pad(d.getMinutes())},one=s=>s.replace(/\s*\n\s*/g,' / ');
+ const L=['# Diario di studio · '+new Date(a).toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'}),
+  'Esame: '+y.examName+' · '+dLong(examTs())+' · mancano '+P.left+' giorni'];
+ if(y.ratings[dk])L.push('Utilità percepita della serata: '+y.ratings[dk]+'/5');
+ L.push('','## Sessioni');
+ if(!ses.length)L.push('- Nessuna sessione di studio');
+ else{L.push(`Totale: ${done.length} completate, ${ses.length-done.length} interrotte, ${fmtMin(min)}`);
+  ses.forEach(s=>{L.push(`- ${hm(s.start)} · ${fmtShort(s.dur)} · ${s.ch?chName(s.ch):'capitolo non indicato'}${s.mini?' · scatoletta piccola':''}${s.abandoned?' · interrotta':''}`);if(s.note)L.push('  - '+(s.recall?'Scritto a memoria: ':'Nota: ')+one(s.note))})}
+ const rv=ev.filter(e=>e.type==='review'&&!e.sim);
+ if(rv.length){L.push('','## Ripasso domande ('+rv.length+')');rv.forEach(e=>{const q=y.questions.find(x=>x.id===e.qid);L.push(`- ${chName(e.ch)} · «${q?q.q:'domanda eliminata'}» → ${GR[e.g]}`)})}
+ y.sims.filter(s=>s.ts>=a&&s.ts<b).forEach(sm=>{L.push('','## Simulazione d\'esame · '+hm(sm.ts)+' · '+fmtMin(Math.max(1,Math.round(sm.used/60))));sm.items.forEach((it,k)=>{L.push(`${k+1}. ${chName(it.ch)} · «${it.q}» → ${GR[it.g]}`);L.push('   Risposta: '+(it.ans?one(it.ans):'(vuota)'))})});
+ L.push('','## Scaffale');
+ ev.filter(e=>e.type==='state').forEach(e=>L.push(`- ${chName(e.ch)}: ${ST_NAMES[e.from]} → ${ST_NAMES[e.to]}`));
+ L.push(`- Stato: ${P.read}/${y.chapters.length} letti · ${P.rev} ripassati · ${P.write} so scrivere · ${paceStatus(P).replace(/^\S+\s/,'')}`);
+ L.push(`- Domande: ${y.questions.length} in archivio, ${dueQs().length} in scadenza oggi`);
+ if(y.bait)L.push('','## Esca per la prossima volta','- '+y.bait+' ('+chName(y.baitCh)+')');
+ L.push('','## Promesse',`- Questa settimana: ${W?W.c:0}/${y.perWeek} sere · serie: ${weekStreak()} settimane · tonno: ${level().name}`);
+ return L.join('\n');
+}
+function diarySheet(){
+ const days=diaryDays();let dk=days[0];
+ const draw=()=>{
+  const txt=diaryText(dk),r=Y().ratings[dk]||0;
+  openModal(`<h3>📤 Diario per il tutor</h3>
+  <div class="field"><label>Giorno</label><select id="dD">${days.map(d=>`<option value="${d}" ${d===dk?'selected':''}>${cap(new Date(d+'T12:00').toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'short'}))}</option>`).join('')}</select></div>
+  <span class="lab" style="text-align:center">Quanto ti è sembrata utile la serata?</span><div class="stars">${[1,2,3,4,5].map(i=>`<button data-star="${i}" class="${i<=r?'on':''}" aria-label="${i} su 5">⭐</button>`).join('')}</div>
+  <textarea readonly id="dT" style="min-height:220px">${esc(txt)}</textarea>
+  <div class="btns"><button class="btn ${navigator.share?'':'pri'}" id="dC">Copia</button>${navigator.share?'<button class="btn pri" id="dS">Condividi</button>':''}</div>
+  <p class="mut" style="font-size:12px;margin:8px 0 0">Incollalo come nuovo file nella cartella del tutor su Drive: lo legge e ti fa coaching sui dati.</p>`);
+  $('#dD').onchange=e=>{dk=e.target.value;draw()};
+  sheet.querySelectorAll('[data-star]').forEach(b=>b.onclick=()=>{Y().ratings[dk]=+b.dataset.star;save();draw()});
+  $('#dC').onclick=()=>navigator.clipboard.writeText(txt).then(()=>toast('Diario copiato 📋'),()=>{$('#dT').select();toast('Seleziona e copia a mano')});
+  const sh=$('#dS');if(sh)sh.onclick=()=>navigator.share({title:'Diario di studio '+dk,text:txt}).catch(()=>{});
+ };
+ draw();
+}
+
 /* ---------- NAV & EVENTS ---------- */
-const VIEWS=['timer','cal','stats','tags','set'];let curView='timer';
+const VIEWS=['timer','study','cal','stats','tags','set'];let curView='timer';
 function go(v){
  const dir=VIEWS.indexOf(v)-VIEWS.indexOf(curView);curView=v;
  const sec=$('#v-'+v);sec.classList.remove('from-r','from-l');void sec.offsetWidth;if(dir)sec.classList.add(dir>0?'from-r':'from-l');
  $$('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
  $$('.view').forEach(s=>s.classList.toggle('on',s.id==='v-'+v));
- if(v==='stats')renderStats();if(v==='cal')renderCal();if(v==='tags')renderTags();if(v==='set')renderSettings();
+ if(v==='stats')renderStats();if(v==='cal')renderCal();if(v==='tags')renderTags();if(v==='set')renderSettings();if(v==='study')renderStudy();
  window.scrollTo(0,0);
 }
 $$('nav button').forEach(b=>b.onclick=()=>go(b.dataset.v));
 /* ---- swipe che segue il dito ---- */
 const mainEl=$('main');let sw=null;
 const viewEl=v=>$('#v-'+v);
-function prepView(v){if(v==='stats')renderStats();if(v==='cal')renderCal();if(v==='tags')renderTags();if(v==='set')renderSettings()}
+function prepView(v){if(v==='study')renderStudy();if(v==='stats')renderStats();if(v==='cal')renderCal();if(v==='tags')renderTags();if(v==='set')renderSettings()}
 function setNav(v){$$('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v))}
 function swShow(dir){
  const i=VIEWS.indexOf(curView),name=dir>0?VIEWS[i+1]:VIEWS[i-1];
@@ -920,6 +1302,9 @@ $('#skipBtn').onclick=skip;
 $('#resetBtn').onclick=resetFlow;
 $('#tagBtn').onclick=tagSheet;
 $('#soundBtn').onclick=soundSheet;
+$('#miniBtn').onclick=startMini;
+$('#chBtn').onclick=chPick;
+$('#dueBtn').onclick=()=>reviewRun();
 $('#zenBtn').onclick=()=>{document.body.classList.toggle('zen');$('#zenBtn span').textContent=document.body.classList.contains('zen')?'Esci':'Modalità focus'};
 $$('#modeSeg button').forEach(b=>b.onclick=()=>{const t=T();if(b.dataset.mode===t.mode)return;if(t.running||focusElapsed()>0){toast('Interrompi prima la sessione in corso');return}t.mode=b.dataset.mode;t.acc=0;setPhase('focus');save();render()});
 $$('#phases button').forEach(b=>b.onclick=()=>{const t=T();if(b.dataset.p===t.phase)return;if(t.running){toast('Metti in pausa per cambiare fase');return}setPhase(b.dataset.p);save();render()});
@@ -938,6 +1323,7 @@ document.addEventListener('pointerdown',()=>{if(T().running&&!amb){ensureAudio()
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',applyTheme);
 
 load();
+ensureStudy();
 S.settings.iosTimer=false;
 if(!S.settings.rulesV){Object.assign(S.settings,{focus:25,short:5,long:30,every:4,ritual:true,rulesV:1});save()}
 applyTheme();

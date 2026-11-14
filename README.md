@@ -13,6 +13,16 @@ Timer Pomodoro a tema tonno in scatola. Gratis, senza account, i dati restano su
 - Swipe tra le sezioni, tema chiaro e scuro, schermo orizzontale
 - Funziona offline dopo la prima apertura; esportazione e importazione dei dati
 
+## Sezione Studio
+
+- **Esca**: a fine sessione scrivi da dove ripartire; alla riapertura un solo pulsante, «Apri la scatola»
+- **Scatoletta piccola**: focus da 10 minuti per le serate no, poi scegli se chiudere o continuare
+- **Pausa con richiamo**: dopo ogni focus di studio, 3 righe scritte a memoria prima della pausa
+- **Scaffale** dei capitoli (chiusa → letta → ripassata → la so scrivere) con il ritmo necessario per arrivare all'esame
+- **Domande in scadenza**: ripasso distanziato a 1, 3, 7, 14 e 30 giorni, importazione dal tutor, simulazione d'esame a 3 domande aperte
+- **Diario per il tutor**: riepilogo della serata da copiare o condividere
+- **Promesse mantenute** (sere fatte rispetto a quelle previste, con una sera di tolleranza) e un tonno che cresce con le sessioni
+
 ## Pubblicazione su GitHub Pages
 
 1. Settings → Pages → Source: **Deploy from a branch**
