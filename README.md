@@ -13,14 +13,19 @@ Timer Pomodoro a tema tonno in scatola. Gratis, senza account, i dati restano su
 - Swipe tra le sezioni, tema chiaro e scuro, schermo orizzontale
 - Funziona offline dopo la prima apertura; esportazione e importazione dei dati
 
-## Sezione Studio
+## Sezione Studio (con il Tracker Psicobiologia)
+
+Il piano di studio (capitoli, macro-domande, richiami, simulazioni) sta nel **Tracker Psicobiologia**. Tonnetto fa partire lo studio e registra cosa hai fatto. Le due app si passano un testo copiato e incollato:
+
+- **Tracker → Tonnetto** (prima di studiare): nel Tracker «Invia a Tonnetto», in Tonnetto Studio → «Ricevi». Compaiono i capitoli da studiare, i richiami in scadenza e le scalette da scrivere.
+- **Tonnetto → Tracker** (a fine serata): in Tonnetto Studio → «Invia» → Copia, nel Tracker «Ricevi da Tonnetto». Il Tracker registra minuti per capitolo e righe scritte a memoria; reinviare non crea doppioni.
+
+Funzioni di Tonnetto per lo studio:
 
 - **Esca**: a fine sessione scrivi da dove ripartire; alla riapertura un solo pulsante, «Apri la scatola»
 - **Scatoletta piccola**: focus da 10 minuti per le serate no, poi scegli se chiudere o continuare
 - **Pausa con richiamo**: dopo ogni focus di studio, 3 righe scritte a memoria prima della pausa
-- **Scaffale** dei capitoli (chiusa → letta → ripassata → la so scrivere) con il ritmo necessario per arrivare all'esame
-- **Domande in scadenza**: ripasso distanziato a 1, 3, 7, 14 e 30 giorni, importazione dal tutor, simulazione d'esame a 3 domande aperte
-- **Numero sull'icona**: le domande in scadenza compaiono sull'icona dell'app (serve il permesso per le notifiche)
+- **Numero sull'icona**: i richiami del Tracker in scadenza oggi (serve il permesso per le notifiche)
 - **Diario per il tutor**: riepilogo della serata da copiare o condividere
 - **Promesse mantenute** (sere fatte rispetto a quelle previste, con una sera di tolleranza) e un tonno che cresce con le sessioni
 

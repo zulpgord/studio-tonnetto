@@ -344,7 +344,7 @@ const K='tonnetto-v1';
 const PAL=['#e8463a','#2a78c2','#5f9a3a','#e9a320','#8a63c9','#ec6f86','#1f9e94','#64788d'];
 const DEF={
  settings:{focus:25,short:5,long:30,every:4,ritual:true,autoBreak:true,autoFocus:false,chime:true,vibrate:true,notify:false,wake:true,theme:'auto',goal:120,volume:.5,sound:'none',askNote:true,iosTimer:false,scName:'Tonnetto',pushOn:false,pushSub:null,pushRun:null,pushKey:null,mini:10,recall:true,iconBadge:true},
- study:{examName:'Psicobiologia del comportamento umano',examDate:'2027-03-15',start:null,perWeek:3,tag:'t2',chapters:mkChapters(19),bait:'',baitCh:1,curCh:1,questions:[],sims:[],log:[],ratings:{},simMin:60},
+ study:{examName:'Psicobiologia del comportamento umano',examDate:'2027-03-15',start:null,perWeek:3,tag:'t2',chapters:mkChapters(),bait:'',baitCh:1,curCh:1,ratings:{},tracker:null,lastSent:0},
  tags:[{id:'t1',name:'Lavoro',color:PAL[0]},{id:'t2',name:'Studio',color:PAL[1]},{id:'t3',name:'Lettura',color:PAL[2]},{id:'t4',name:'Scrittura',color:PAL[3]}],
  sessions:[],
  timer:{mode:'pomo',phase:'focus',running:false,endAt:0,remaining:null,planned:0,startedAt:0,acc:0,cycle:0,tag:'t1',focusStart:0}
@@ -865,7 +865,7 @@ function renderSettings(){
  const notifState='Notification'in window?Notification.permission:'unsupported';
  $('#v-set').innerHTML=`<h2>Impostazioni</h2>
  <div class="card">${step('focus','Durata focus')}${step('short','Pausa breve')}${step('long','Pausa lunga')}${step('every','Pausa lunga ogni','sessioni di focus')}${step('goal','Obiettivo giornaliero')}${step('mini','Scatoletta piccola','Per le serate no: poi decidi se continuare')}</div>
- <div class="card">${sw('autoBreak','Avvia pausa in automatico')}${sw('autoFocus','Avvia focus dopo la pausa')}${sw('chime','Suono di fine sessione')}${sw('vibrate','Vibrazione','Solo sui dispositivi che la supportano')}${sw('wake','Schermo sempre acceso','Durante il timer')}${sw('ritual','Rituale prima del focus','Posto tranquillo, via le distrazioni, un solo compito. A inizio ciclo')}${sw('askNote','Nota a fine sessione','Scrivi com\'è andata')}${sw('iconBadge','Numero sull\'icona','Domande in scadenza sull\'icona di Tonnetto. Serve il permesso per le notifiche')}${sw('recall','Pausa con richiamo','Per le sessioni di studio: 3 righe a memoria e l\'esca prima della pausa')}<div class="set"><div>Avvisi a telefono bloccato<small>Fine focus e fine pausa, anche con l'app chiusa, senza uscire dall'app</small></div><label class="sw"><input type="checkbox" id="pushSw" ${s.pushOn?'checked':''}><span></span></label></div>${s.pushOn?'<div class="set"><div>Prova gli avvisi<small>Arriva una notifica tra 10 secondi</small></div><button class="chip" id="pushTest">Prova</button></div>':''}
+ <div class="card">${sw('autoBreak','Avvia pausa in automatico')}${sw('autoFocus','Avvia focus dopo la pausa')}${sw('chime','Suono di fine sessione')}${sw('vibrate','Vibrazione','Solo sui dispositivi che la supportano')}${sw('wake','Schermo sempre acceso','Durante il timer')}${sw('ritual','Rituale prima del focus','Posto tranquillo, via le distrazioni, un solo compito. A inizio ciclo')}${sw('askNote','Nota a fine sessione','Scrivi com\'è andata')}${sw('iconBadge','Numero sull\'icona','Richiami del Tracker in scadenza sull\'icona di Tonnetto. Serve il permesso per le notifiche')}${sw('recall','Pausa con richiamo','Per le sessioni di studio: 3 righe a memoria e l\'esca prima della pausa')}<div class="set"><div>Avvisi a telefono bloccato<small>Fine focus e fine pausa, anche con l'app chiusa, senza uscire dall'app</small></div><label class="sw"><input type="checkbox" id="pushSw" ${s.pushOn?'checked':''}><span></span></label></div>${s.pushOn?'<div class="set"><div>Prova gli avvisi<small>Arriva una notifica tra 10 secondi</small></div><button class="chip" id="pushTest">Prova</button></div>':''}
   <div class="set"><div>Notifiche<small>${notifState==='granted'?'Attive':notifState==='denied'?'Bloccate dal browser':notifState==='unsupported'?'Su iPhone: aggiungi Tonnetto alla schermata Home':'Non ancora autorizzate'}</small></div>${notifState==='granted'?`<label class="sw"><input type="checkbox" data-sw="notify" ${s.notify?'checked':''}><span></span></label>`:notifState==='default'?'<button class="chip" id="askN">Autorizza</button>':''}</div>
   <div class="set"><div>Tema</div><div class="seg sm" id="thm">${[['auto','Auto'],['light','Chiaro'],['dark','Scuro']].map(([k,l])=>`<button data-t="${k}" class="${s.theme===k?'on':''}">${l}</button>`).join('')}</div></div>
  </div>
@@ -888,33 +888,34 @@ function applyTheme(){
 }
 
 /* ---------- STUDIO ---------- */
-const ST_NAMES=['Chiusa','Letta','Ripassata','La so scrivere'];
+/* Tonnetto fa partire e registra lo studio; il piano (capitoli, macro-domande, richiami, simulazioni)
+   sta nel Tracker Psicobiologia. Le due app si scambiano un testo copiato e incollato. */
 const ST_COL=['#9aa8b6','#2a78c2','#e9a320','#e8463a'];
-const INT=[1,3,7,14,30]; // giorni tra un ripasso e l'altro, per livello
-const GR=['Non la sapevo','Così così','La sapevo'];
 const LV=[[0,'Alice'],[6,'Sardina'],[18,'Sgombro'],[36,'Tonnetto'],[60,'Tonno'],[90,'Tonno rosso']];
-function mkChapters(n,old){const a=[];for(let i=1;i<=n;i++){const o=old&&old[i-1];a.push(o?{...o,n:i}:{n:i,title:'',state:0})}return a}
+const LVC={r:'#e8463a',g:'#e9a320',v:'#3fa877'};
+// capitoli del manuale, uguali al Tracker (20 = Appendice A.1)
+function mkChapters(){return ['Neuroscienze comportamentali','Neuroanatomia funzionale','Neurofisiologia','La chimica del comportamento','Gli ormoni e il cervello','L’evoluzione del cervello e del comportamento','Lo sviluppo del comportamento e del cervello nel ciclo di vita','Elaborazione sensoriale, tatto e dolore','Udito, percezione vestibolare, gusto e olfatto','Visione','Controllo motorio e plasticità','Il sesso','L’omeostasi','Ritmi biologici, sonno e attività onirica','Le emozioni, l’aggressività e lo stress','Psicopatologia','Apprendimento e memoria','Attenzione e cognizione di ordine superiore','Linguaggio e lateralizzazione','DNA e sintesi proteica'].map((t,i)=>({n:i+1,key:i===19?'A':String(i+1),title:t,state:0}))}
 const Y=()=>S.study;
 function ensureStudy(){
  const y=S.study;if(!y.start)y.start=midnight(Date.now());
- if(!Array.isArray(y.chapters)||!y.chapters.length)y.chapters=mkChapters(19);
- ['questions','sims','log'].forEach(k=>{if(!Array.isArray(y[k]))y[k]=[]});if(!y.ratings)y.ratings={};
+ if(!Array.isArray(y.chapters)||y.chapters.length!==20||!y.chapters[0].key)y.chapters=mkChapters();
+ if(!y.ratings)y.ratings={};
  if(!y.tag||!S.tags.some(t=>t.id===y.tag)){const f=S.tags.find(t=>/studi/i.test(t.name));y.tag=f?f.id:null}
- if(!y.curCh||y.curCh>y.chapters.length)y.curCh=1;if(!y.baitCh||y.baitCh>y.chapters.length)y.baitCh=y.curCh;
+ if(!y.curCh||y.curCh>20)y.curCh=1;if(!y.baitCh||y.baitCh>20)y.baitCh=y.curCh;
 }
 const isStudy=s=>!!s&&!!S.study.tag&&s.tag===S.study.tag;
-const chName=n=>{const c=Y().chapters[(n||1)-1];return 'Cap. '+n+(c&&c.title?' · '+c.title:'')};
+const chLab=n=>n===20?'App. A':'Cap. '+n;
+const chName=n=>{n=n||1;const c=Y().chapters[n-1];return chLab(n)+(c&&c.title?' · '+c.title:'')};
+const chNum=k=>{const i=Y().chapters.findIndex(c=>String(c.key)===String(k));return i>=0?i+1:null};
 const examTs=()=>{const t=new Date(Y().examDate+'T09:00').getTime();return isNaN(t)?addDays(Date.now(),120):t};
 const daysLeft=()=>Math.max(0,Math.round((midnight(examTs())-midnight(Date.now()))/DAY));
 const dLong=ts=>new Date(ts).toLocaleDateString('it-IT',{day:'numeric',month:'long',year:'numeric'});
-function logEv(o){const L=Y().log;L.push({ts:Date.now(),...o});if(L.length>3000)L.splice(0,L.length-3000)}
-const dueQs=()=>{const e=addDays(midnight(Date.now()),1);return Y().questions.filter(q=>q.due<e)};
-function gradeQ(q,g,extra){const from=q.box;if(g===0)q.box=0;else if(g===2)q.box=Math.min(INT.length-1,q.box+1);q.due=addDays(midnight(Date.now()),g===0?1:INT[q.box]);q.last=Date.now();logEv({type:'review',qid:q.id,ch:q.ch,g,from,to:q.box,...(extra||{})})}
-// se l'esca nomina un capitolo ("cap. 8 …") lo usa, altrimenti resta quello appena studiato
-function baitChOf(txt,dflt){const m=String(txt).match(/cap(?:itolo)?\.?\s*(\d{1,2})/i),n=m?+m[1]:0;return n>=1&&n<=Y().chapters.length?n:dflt}
-const boxLabel=q=>q.due<addDays(midnight(Date.now()),1)?'⏳ In scadenza oggi · livello '+(q.box+1)+'/5':'Prossimo ripasso '+dShort(q.due)+' · livello '+(q.box+1)+'/5';
+const hm=ts=>{const d=new Date(ts);return pad(d.getHours())+':'+pad(d.getMinutes())};
+// richiami del Tracker in scadenza oggi, tolti quelli segnati come fatti stasera
+function trDue(){const tr=Y().tracker;if(!tr||!Array.isArray(tr.rich))return[];const td=dayKey(Date.now()),done=tr.doneIds||[];return tr.rich.filter(r=>r.due&&r.due<=td&&!done.includes(r.id)).sort((a,b)=>(a.l==='r')===(b.l==='r')?(a.due<b.due?-1:1):(a.l==='r'?-1:1))}
+function baitChOf(txt,dflt){const s=String(txt);if(/\bapp(\.|endice)?\b/i.test(s))return 20;const m=s.match(/cap(?:itolo)?\.?\s*(\d{1,2})/i),n=m?+m[1]:0;return n>=1&&n<=19?n:dflt}
 
-/* promesse: sere di studio fatte rispetto a quelle previste, settimana per settimana */
+/* promesse e tonno */
 function weekStart(ts){const m=midnight(ts);return addDays(m,-((new Date(m).getDay()+6)%7))}
 function promiseWeeks(n){
  const days=new Set(S.sessions.filter(s=>isStudy(s)&&!s.abandoned).map(s=>dayKey(s.start)));
@@ -940,33 +941,23 @@ function shelfCan(st){
  const star=st===3?'<path d="M31 1l2.2 4.4 4.8.7-3.5 3.4.8 4.8-4.3-2.3-4.3 2.3.8-4.8-3.5-3.4 4.8-.7z" fill="#f2b33d" stroke="#c98a12" stroke-width=".6"/>':'';
  return `<svg viewBox="0 0 40 40" aria-hidden="true">${top}${BODY}<path d="M6 22a14 3.5 0 0 0 28 0v6a14 3.5 0 0 1-28 0z" fill="${ST_COL[st]}"/>${star}</svg>`;
 }
-function pace(){
- const ch=Y().chapters,tot=ch.length*3,done=ch.reduce((a,c)=>a+c.state,0),ex=examTs(),st=Y().start,now=Date.now();
- const left=daysLeft(),target=addDays(midnight(ex),-14),leftT=Math.round((target-midnight(now))/DAY);
- const useT=leftT>0,daysFor=useT?leftT:left,eve=Math.max(1,Math.round(daysFor*Y().perWeek/7));
- const frac=Math.max(0,Math.min(1,(now-st)/Math.max(DAY,(useT?target:ex)-st)));
- return{tot,done,left,target:useT?target:ex,useT,eve,perWeek:(tot-done)/eve*Y().perWeek,diff:done-tot*frac,
-  read:ch.filter(c=>c.state>=1).length,rev:ch.filter(c=>c.state>=2).length,write:ch.filter(c=>c.state>=3).length};
-}
-function paceStatus(P){if(P.done>=P.tot)return'🏁 Scaffale completo';if(P.diff>=1)return'✅ Avanti di '+Math.round(P.diff)+(Math.round(P.diff)===1?' passo':' passi');if(P.diff>-1)return'✅ In linea col piano';const d=Math.round(-P.diff);return'⚠️ Indietro di '+d+(d===1?' passo':' passi')}
-const n1=x=>{const r=Math.round(x*10)/10;return String(r).replace('.',',')};
 
-/* timer: esca, scatoletta piccola, capitolo, domande in scadenza */
+/* timer: esca, scatoletta piccola, capitolo, richiami in scadenza */
 function renderStudyBits(){
  const t=T(),y=Y(),fresh=!t.running&&t.mode==='pomo'&&t.phase==='focus'&&t.remaining==null;
  const bc=$('#baitCard');
- if(fresh&&y.bait&&y.tag){bc.innerHTML=`<small>🎣 Riparti da qui</small><p>${esc(y.bait)}</p><small>${esc(chName(y.baitCh))}</small><button class="btn pri" id="baitGo">Apri la scatola</button>`;bc.style.display='';$('#baitGo').onclick=baitStart}
+ if(fresh&&y.bait&&y.tag){bc.innerHTML=`<small>🎣 Riparti da qui</small><p>${esc(y.bait)}</p>${y.bait!==chName(y.baitCh)?`<small>${esc(chName(y.baitCh))}</small>`:''}<button class="btn pri" id="baitGo">Apri la scatola</button>`;bc.style.display='';$('#baitGo').onclick=baitStart}
  else{bc.style.display='none';bc.innerHTML=''}
  $('#miniBtn').style.display=fresh?'':'none';$('#miniBtn span').textContent='Solo '+S.settings.mini+' min';
- $('#chBtn').style.display=y.tag&&t.tag===y.tag&&t.mode==='pomo'?'':'none';$('#chBtn span').textContent='Cap. '+y.curCh;
- const d=dueQs().length;$('#dueBtn').style.display=d&&!t.running?'':'none';$('#dueBtn span').textContent=d+(d===1?' domanda':' domande');
+ $('#chBtn').style.display=y.tag&&t.tag===y.tag&&t.mode==='pomo'?'':'none';$('#chBtn span').textContent=chLab(y.curCh);
+ const d=trDue().length;$('#dueBtn').style.display=d&&!t.running?'':'none';$('#dueBtn span').textContent=d+(d===1?' richiamo':' richiami');
  const nb=$('#dueBadge');nb.textContent=d>99?'99+':d;nb.classList.toggle('on',d>0);
  iconBadge(d);
 }
-// numero sull'icona dell'app (schermata Home): domande in scadenza oggi
+// numero sull'icona dell'app (schermata Home): richiami in scadenza oggi
 let lastBadge=null;
 function iconBadge(d){
- if(d==null)d=dueQs().length;if(!S.settings.iconBadge)d=0;
+ if(d==null)d=trDue().length;if(!S.settings.iconBadge)d=0;
  if(d===lastBadge||!('setAppBadge'in navigator))return;lastBadge=d;
  (d>0?navigator.setAppBadge(d):navigator.clearAppBadge()).catch(()=>{lastBadge=null});
 }
@@ -978,9 +969,8 @@ function baitStart(){
 }
 function chPick(){
  const y=Y();
- openModal(`<h3>Su quale capitolo?</h3><div class="shelf" style="margin-top:10px">${y.chapters.map(c=>`<button data-ch="${c.n}" class="${c.n===y.curCh?'cur':''}" aria-label="${esc(chName(c.n))}">${shelfCan(c.state)}${c.n}</button>`).join('')}</div><button class="add" id="toShelf" style="margin-top:12px">Apri lo scaffale</button>`);
+ openModal(`<h3>Su quale capitolo?</h3><div class="shelf" style="margin-top:10px">${y.chapters.map(c=>`<button data-ch="${c.n}" class="${c.n===y.curCh?'cur':''}" aria-label="${esc(chName(c.n))}">${shelfCan(c.state)}${c.n===20?'A':c.n}</button>`).join('')}</div><p class="mut" style="font-size:13px;margin:8px 0 0">${esc(chName(y.curCh))}</p>`);
  sheet.querySelectorAll('[data-ch]').forEach(b=>b.onclick=()=>{y.curCh=+b.dataset.ch;save();closeModal();render();toast(chName(y.curCh))});
- $('#toShelf').onclick=()=>{closeModal();go('study')};
 }
 
 /* fine focus: richiamo attivo + esca, oppure "chiudo o continuo" dopo la scatoletta piccola */
@@ -998,7 +988,7 @@ function afterFocus(ses,o){
  <p class="mut" style="margin:0 0 8px;font-size:15px">Libro chiuso: scrivi a memoria cosa hai appena studiato.${o.after?' La pausa parte quando hai finito.':''}</p>
  <div class="field"><label>Capitolo</label><select id="afCh">${y.chapters.map(c=>`<option value="${c.n}" ${c.n===ch?'selected':''}>${esc(chName(c.n))}</option>`).join('')}</select></div>
  <textarea id="afR" class="note" placeholder="3 righe a memoria: concetti, termini, collegamenti…"></textarea>
- <div class="field"><label>🎣 La prossima volta riparto da…</label><input type="text" id="afB" maxlength="90" value="${esc(y.bait)}" placeholder="es. cap. 8, par. 8.3: neurotrasmettitori"></div>
+ <div class="field"><label>🎣 La prossima volta riparto da…</label><input type="text" id="afB" maxlength="90" value="${esc(y.bait)}" placeholder="es. cap. 8, par. 8.3: il dolore"></div>
  <div class="btns">${o.mini?`<button class="btn" data-x="stop">Chiudo qui</button><button class="btn pri" data-x="go">Continuo: ${S.settings.focus} min</button>`:'<button class="btn" data-x="skip">Salta</button><button class="btn pri" data-x="save">Salva</button>'}</div>`);
  sheet.dataset.lock='1';
  onClose=()=>{if(o.after)o.after()};
@@ -1013,195 +1003,131 @@ function afterFocus(ses,o){
  setTimeout(()=>{const a=$('#afR');if(a)a.focus()},350);
 }
 
+/* scambio col Tracker Psicobiologia */
+function unsent(){const y=Y();return S.sessions.filter(s=>isStudy(s)&&s.end>(y.lastSent||0))}
+function trackerCode(all){
+ const y=Y(),list=all?S.sessions.filter(isStudy):unsent();
+ const ses=list.map(s=>({id:s.id,d:dayKey(s.start),start:s.start,min:Math.max(1,Math.round(s.dur/60)),ch:s.ch?(s.ch===20?'A':String(s.ch)):null,mini:!!s.mini,ab:!!s.abandoned,r:s.recall?s.note:''}));
+ return{txt:'TONNETTO>TRACKER '+JSON.stringify({v:1,src:'tonnetto',ts:Date.now(),ses}),n:ses.length};
+}
+function sendSheet(){
+ const y=Y();let all=false;
+ const draw=()=>{
+  const c=trackerCode(all);
+  openModal(`<h3>Invia al Tracker</h3><p class="mut" style="font-size:14px;margin:0 0 8px">${c.n?`${c.n} ${c.n===1?'sessione':'sessioni'} di studio${all?' (tutte)':' non ancora inviate'}: capitolo, minuti e righe scritte a memoria.`:'Nessuna sessione nuova da inviare.'}</p>
+  <ol class="mut" style="font-size:14px;margin:0 0 10px;padding-left:20px"><li>Tocca <b>Copia</b>.</li><li>Nel Tracker: Plancia → <b>Ricevi da Tonnetto</b> → incolla.</li></ol>
+  <div class="btns" style="margin-top:0"><button class="btn pri" id="sdC" ${c.n?'':'disabled'}>Copia</button></div>
+  <button class="more" id="sdAll">${all?'Solo le nuove':'Reinvia tutte le sessioni'}</button>
+  <p class="mut" style="font-size:12px;margin:8px 0 0">Il Tracker ignora le sessioni che ha già: reinviare non crea doppioni.</p>`);
+  $('#sdAll').onclick=()=>{all=!all;draw()};
+  const b=$('#sdC');if(b)b.onclick=()=>navigator.clipboard.writeText(c.txt).then(()=>{y.lastSent=Date.now();save();closeModal();refreshViews();toast('Copiato: incollalo nel Tracker 📋')},()=>toast('Copia non riuscita'));
+ };
+ draw();
+}
+function receiveSheet(){
+ openModal(`<h3>Ricevi dal Tracker</h3><ol class="mut" style="font-size:14px;margin:0 0 10px;padding-left:20px"><li>Nel Tracker: Plancia → <b>Invia a Tonnetto</b>.</li><li>Incolla qui il testo copiato.</li></ol>
+ <textarea id="rcT" class="note" style="min-height:130px;font-size:13px" placeholder="TRACKER>TONNETTO {…}"></textarea>
+ <div class="btns"><button class="btn" id="rcX">Annulla</button><button class="btn pri" id="rcG">Importa</button></div>`);
+ if(navigator.clipboard&&navigator.clipboard.readText){const p=document.createElement('button');p.className='more';p.textContent='📋 Incolla dagli appunti';p.onclick=()=>navigator.clipboard.readText().then(t=>{$('#rcT').value=t},()=>toast('Incolla a mano'));$('#rcT').before(p)}
+ $('#rcX').onclick=closeModal;
+ $('#rcG').onclick=()=>{try{fromTracker($('#rcT').value);closeModal();refreshViews();toast('Piano di stasera ricevuto 📥')}catch(e){toast('Testo non riconosciuto: copialo di nuovo dal Tracker')}};
+}
+function fromTracker(txt){
+ const i=String(txt).indexOf('{');if(i<0)throw 0;const o=JSON.parse(String(txt).slice(i));
+ if(o.src!=='tracker'||!Array.isArray(o.ch))throw 0;
+ const y=Y(),old=y.tracker,keepDone=old&&dayKey(old.got)===dayKey(Date.now())?old.doneIds||[]:[];
+ y.tracker={...o,got:Date.now(),doneIds:keepDone};
+ y.chapters=mkChapters().map((c,k)=>{const t=o.ch.find(x=>String(x.n)===c.key);return t?{...c,title:(t.t||c.title).replace(/^Appendice A\.1:\s*/,''),stage:t.k||0,done:!!t.d,state:t.d?3:t.k>=3?2:t.k>=1?1:0}:c});
+ if(o.exam)y.examDate=o.exam;if(o.examName)y.examName=o.examName;
+ const first=(o.todo||[]).map(chNum).find(Boolean);
+ if(first){y.curCh=first;if(!y.bait){y.bait=chName(first);y.baitCh=first}}
+ ensureStudy();save();
+}
+
 /* vista Studio */
 function renderStudy(){
- const el=$('#v-study'),y=Y(),P=pace(),L=level(),W=promiseWeeks(8),cw=W[W.length-1],due=dueQs().length,streak=weekStreak();
- const ls=y.sims[y.sims.length-1];
+ const el=$('#v-study'),y=Y(),L=level(),W=promiseWeeks(8),cw=W[W.length-1],streak=weekStreak(),tr=y.tracker,due=trDue(),un=unsent().length,left=daysLeft();
+ const stale=tr&&dayKey(tr.got)!==dayKey(Date.now());
+ let plan='';
+ if(!tr)plan=`<p class="mut" style="margin:4px 0 0;font-size:14px">Il piano lo tiene il Tracker Psicobiologia. Nel Tracker tocca <b>Invia a Tonnetto</b>, poi qui <b>Ricevi</b>: compaiono i capitoli di stasera e i richiami in scadenza.</p>`;
+ else{
+  const todo=(tr.todo||[]).map(chNum).filter(Boolean),scs=tr.sc||[];
+  plan=`<p class="mut" style="margin:2px 0 8px;font-size:13px">${stale?'⚠️ ':''}Ricevuto ${dayName(midnight(tr.got))} alle ${hm(tr.got)}${stale?': aggiorna dal Tracker prima di studiare':''}</p>
+  ${tr.week?`<p style="margin:0 0 2px;font-weight:700">Settimana ${tr.week.n}: ${esc(tr.week.t)}</p>`:''}
+  <p class="mut" style="margin:0 0 6px;font-size:14px">${esc(tr.book?tr.book.st:'')}${tr.pace?' · '+esc(tr.pace):''}${tr.book?` · libro ${tr.book.done}/${tr.book.tot}`:''}</p>
+  <span class="lab" style="margin-top:12px">📖 Da studiare</span>
+  ${todo.length?`<div class="list">${todo.map(n=>{const c=y.chapters[n-1];return `<div class="it"><span style="width:34px;height:34px;flex:none">${shelfCan(c.state)}</span><div class="g">${esc(chName(n))}<small>${c.stage||0} di 5 passaggi</small></div><button class="chip" data-study="${n}">Studia</button></div>`}).join('')}</div>`:'<p class="mut" style="font-size:14px;margin:2px 0 0">Nessun capitolo in calendario: richiami e scalette.</p>'}
+  <span class="lab" style="margin-top:14px">⏳ Richiami di stasera (${due.length})</span>
+  ${(tr.rich||[]).filter(r=>r.due&&r.due<=dayKey(Date.now())).length?`<div class="list">${(tr.rich||[]).filter(r=>r.due&&r.due<=dayKey(Date.now())).map(r=>{const dn=(tr.doneIds||[]).includes(r.id);return `<label class="it" style="cursor:pointer;${dn?'opacity:.5':''}"><span class="dot" style="background:${LVC[r.l]||'#9aa8b6'};width:12px;height:12px"></span><div class="g" style="${dn?'text-decoration:line-through':''}">${esc(r.t)}<small>${r.l==='r'?'Rossa: ogni giorno finché non diventa gialla':'Richiamo '+((r.s||0)+1)+' di 4'} · ${esc(chLab(chNum(r.ch)||1))}</small></div><input type="checkbox" data-done="${esc(r.id)}" ${dn?'checked':''} style="width:22px;height:22px;accent-color:var(--cool)" aria-label="Fatto stasera"></label>`}).join('')}</div><p class="mut" style="font-size:12px;margin:4px 0 0">Spunta quelli fatti: il livello (rosso, giallo, verde) lo dai nel Tracker.</p>`:'<p class="mut" style="font-size:14px;margin:2px 0 0">Nessun richiamo in scadenza oggi.</p>'}
+  ${scs.length?`<span class="lab" style="margin-top:14px">✍️ Scalette da scrivere</span><div class="list">${scs.map(m=>`<div class="it"><div class="g">${esc(m.t)}<small>${esc(chLab(chNum(m.ch)||1))}</small></div></div>`).join('')}</div>`:''}`;
+ }
  el.innerHTML=`<div class="hdr"><h2 style="margin:0">Studio</h2><button class="ic sm" id="stCfg" aria-label="Impostazioni dello studio" style="font-size:20px">⚙</button></div>
- <p class="mut" style="margin:0 0 14px;font-weight:600">${esc(y.examName)} · ${dLong(examTs())} · <b style="color:var(--ink)">${P.left===0?'è oggi!':'mancano '+P.left+(P.left===1?' giorno':' giorni')}</b></p>
+ <p class="mut" style="margin:0 0 14px;font-weight:600">${esc(y.examName)} · ${dLong(examTs())} · <b style="color:var(--ink)">${left===0?'è oggi!':'mancano '+left+(left===1?' giorno':' giorni')}</b></p>
  ${y.tag?'':'<div class="card" style="border:2px dashed var(--warm)"><b>Scegli il tag dello studio</b><p class="mut" style="margin:4px 0 0;font-size:14px">Serve per riconoscere le sessioni di studio. Tocca ⚙.</p></div>'}
+ <div class="card"><div class="hdr" style="margin:0"><h3 style="margin:0">🗺️ Stasera dal Tracker</h3></div>${plan}
+  <div class="btns"><button class="btn ${tr&&!stale?'':'pri'}" id="trIn">📥 Ricevi</button><button class="btn ${un?'pri':''}" id="trOut">📤 Invia${un?' ('+un+')':''}</button></div></div>
+ <div class="card"><div class="hdr" style="margin:0"><h3 style="margin:0">🎣 Esca</h3><button class="chip" id="baitEd">Modifica</button></div>
+  <p style="margin:6px 0 0;font-weight:600">${y.bait?esc(y.bait)+(y.bait!==chName(y.baitCh)?`<br><small class="mut">${esc(chName(y.baitCh))}</small>`:''):'<span class="mut" style="font-weight:500">Nessuna esca. La lasci a fine sessione, nella pausa con richiamo.</span>'}</p>
+  <div class="btns" style="margin-top:12px"><button class="btn pri" id="stGo">Apri la scatola</button><button class="btn" id="stMini">🥫 Solo ${S.settings.mini} min</button></div></div>
  <div class="card"><div class="lvl">${fishSvg(L.i)}<div style="flex:1;min-width:0"><span class="lab">Il tuo tonno</span><b style="font-size:24px;font-weight:800;line-height:1.1">${L.name}</b><div class="goalbar" style="width:100%;margin:6px 0 3px"><i style="width:${L.need?Math.round((L.n-L.from)/(L.need-L.from)*100):100}%"></i></div><small class="mut" style="font-size:13px">${L.need?`${L.n} scatolette di studio · ancora ${L.need-L.n} per diventare ${L.next}`:L.n+' scatolette: livello massimo 🏆'}</small></div></div>
   <h3 style="margin:16px 0 2px">Promesse mantenute</h3><p class="mut" style="margin:0;font-size:14px">Questa settimana <b style="color:var(--ink)">${cw?cw.c:0}/${y.perWeek} sere</b> · serie ${streak} ${streak===1?'settimana':'settimane'} · 🛟 una sera di tolleranza a settimana</p>
   <div class="weeks">${W.map(w=>!w?'<span style="opacity:.3"></span>':`<span class="${w.kept?'k':w.buoy?'b':''} ${w.current?'c':''}" title="Settimana del ${dShort(w.a)}">${w.kept?'✓':w.buoy?'🛟':w.current?w.c+'/'+w.tgt:w.c}</span>`).join('')}</div></div>
- <div class="card"><div class="hdr" style="margin:0"><h3 style="margin:0">🎣 Esca</h3><button class="chip" id="baitEd">Modifica</button></div>
-  <p style="margin:6px 0 0;font-weight:600">${y.bait?esc(y.bait)+`<br><small class="mut">${esc(chName(y.baitCh))}</small>`:'<span class="mut" style="font-weight:500">Nessuna esca. La lasci a fine sessione, nella pausa con richiamo.</span>'}</p>
-  <div class="btns" style="margin-top:12px"><button class="btn pri" id="stGo">Apri la scatola</button><button class="btn" id="stMini">🥫 Solo ${S.settings.mini} min</button></div></div>
- <div class="card"><h3>Ritmo</h3><div class="goalbar" style="width:100%;height:12px;margin:0"><i style="width:${Math.round(P.done/P.tot*100)}%"></i></div>
-  <p style="margin:8px 0 0;font-weight:800">${paceStatus(P)}</p>
-  <p class="mut" style="margin:2px 0 0;font-size:14px">${P.done}/${P.tot} passi. ${P.done<P.tot?`Per finire lo scaffale entro il ${dShort(P.target)} servono <b style="color:var(--ink)">${n1(P.perWeek)} passi a settimana</b> (${P.eve} sere rimaste).${P.useT?' Le ultime 2 settimane restano per le simulazioni.':''}`:'Ora ripasso e simulazioni.'}</p>
-  <div class="stat3"><div><b>${P.read}</b><small>letti</small></div><div><b>${P.rev}</b><small>ripassati</small></div><div><b>${P.write}</b><small>so scrivere</small></div></div></div>
- <h3 class="sec">Scaffale</h3>
- <div class="card"><div class="shelf">${y.chapters.map(c=>`<button data-ch="${c.n}" class="${c.n===y.curCh?'cur':''}" aria-label="${esc(chName(c.n))}: ${ST_NAMES[c.state]}">${shelfCan(c.state)}${c.n}</button>`).join('')}</div>
-  <div class="legend">${ST_NAMES.map((s,i)=>`<span><i style="background:${ST_COL[i]}"></i>${s}</span>`).join('')}</div>
-  <p class="mut" style="font-size:13px;margin:6px 0 0">Un passo = un capitolo che avanza di uno stato. Tocca una scatoletta per aggiornarla.</p></div>
- <h3 class="sec">Domande in scadenza</h3>
- <div class="card"><div class="duo"><div><span class="lab">Da ripassare oggi</span><b>${due}</b></div><div><span class="lab">In archivio</span><b>${y.questions.length}</b></div></div>
-  <div class="btns"><button class="btn pri" id="qRev" ${due?'':'disabled'}>⏳ Ripassa</button><button class="btn" id="qSim">🧪 Simula l'esame</button></div>
-  <div class="btns" style="margin-top:8px"><button class="btn" id="qNew">+ Domanda</button><button class="btn" id="qImp">Importa dal tutor</button></div>
-  ${ls?`<p class="mut" style="font-size:13px;margin:12px 0 0">Ultima simulazione: ${dShort(ls.ts)} · ${ls.items.filter(i=>i.g===2).length}/${ls.items.length} sapute</p>`:'<p class="mut" style="font-size:13px;margin:12px 0 0">Ogni domanda torna a 1, 3, 7, 14 e 30 giorni se la sai; se no torna domani.</p>'}</div>
- <div class="card"><h3>📤 Diario per il tutor</h3><p class="mut" style="font-size:14px;margin:0">Il riepilogo della serata, pronto da incollare nel log del tutor su Drive.</p><button class="btn pri" id="diary" style="width:100%;margin-top:12px">Prepara il diario</button></div>`;
- $('#stCfg').onclick=studyConfig;$('#baitEd').onclick=baitEdit;
+ <div class="card"><h3>📤 Diario per il tutor</h3><p class="mut" style="font-size:14px;margin:0">Il riepilogo della serata, pronto da incollare nel log del tutor su Drive.</p><button class="btn" id="diary" style="width:100%;margin-top:12px">Prepara il diario</button></div>`;
+ $('#stCfg').onclick=studyConfig;$('#baitEd').onclick=baitEdit;$('#trIn').onclick=receiveSheet;$('#trOut').onclick=sendSheet;$('#diary').onclick=diarySheet;
  $('#stGo').onclick=()=>{go('timer');baitStart()};$('#stMini').onclick=()=>{const t=T();if(y.tag)t.tag=y.tag;go('timer');startMini()};
- el.querySelectorAll('[data-ch]').forEach(b=>b.onclick=()=>chapterSheet(+b.dataset.ch));
- $('#qRev').onclick=()=>reviewRun();$('#qSim').onclick=simRun;$('#qNew').onclick=()=>qEdit(null,y.curCh);$('#qImp').onclick=qImport;$('#diary').onclick=diarySheet;
+ el.querySelectorAll('[data-study]').forEach(b=>b.onclick=()=>{const n=+b.dataset.study;y.curCh=n;if(y.tag)T().tag=y.tag;save();go('timer');render();toast(chName(n))});
+ el.querySelectorAll('[data-done]').forEach(c=>c.onchange=()=>{const id=c.dataset.done,d=tr.doneIds||(tr.doneIds=[]);if(c.checked){if(!d.includes(id))d.push(id)}else tr.doneIds=d.filter(x=>x!==id);save();renderStudy();renderStudyBits()});
 }
 function baitEdit(){
  const y=Y();
- openModal(`<h3>🎣 Esca</h3><p class="mut" style="margin:0 0 6px;font-size:14px">La prima azione concreta della prossima sessione.</p><div class="field"><label>Riparto da…</label><input type="text" id="beT" maxlength="90" value="${esc(y.bait)}" placeholder="es. cap. 8, par. 8.3: neurotrasmettitori"></div><div class="field"><label>Capitolo</label><select id="beC">${y.chapters.map(c=>`<option value="${c.n}" ${c.n===y.baitCh?'selected':''}>${esc(chName(c.n))}</option>`).join('')}</select></div><div class="btns"><button class="btn" id="beX">Annulla</button><button class="btn pri" id="beS">Salva</button></div>`);
+ openModal(`<h3>🎣 Esca</h3><p class="mut" style="margin:0 0 6px;font-size:14px">La prima azione concreta della prossima sessione.</p><div class="field"><label>Riparto da…</label><input type="text" id="beT" maxlength="90" value="${esc(y.bait)}" placeholder="es. cap. 8, par. 8.3: il dolore"></div><div class="field"><label>Capitolo</label><select id="beC">${y.chapters.map(c=>`<option value="${c.n}" ${c.n===y.baitCh?'selected':''}>${esc(chName(c.n))}</option>`).join('')}</select></div><div class="btns"><button class="btn" id="beX">Annulla</button><button class="btn pri" id="beS">Salva</button></div>`);
  $('#beX').onclick=closeModal;
  $('#beS').onclick=()=>{y.bait=$('#beT').value.trim();y.baitCh=+$('#beC').value;save();closeModal();refreshViews()};
-}
-function chapterSheet(n){
- const y=Y(),c=y.chapters[n-1];if(!c)return;
- const rec=S.sessions.filter(s=>s.ch===n&&s.note&&isStudy(s)).sort((a,b)=>b.start-a.start),qs=y.questions.filter(q=>q.ch===n);
- openModal(`<h3>Capitolo ${n}</h3>
- <div class="field"><label>Titolo</label><input type="text" id="cT" maxlength="60" value="${esc(c.title)}" placeholder="es. Il neurone e la sinapsi"></div>
- <span class="lab">Stato</span><div class="statepick">${ST_NAMES.map((s,i)=>`<button data-s="${i}" class="${c.state===i?'on':''}">${s}</button>`).join('')}</div>
- <div class="btns" style="margin-top:8px"><button class="btn pri" id="cGo">📖 Studia questo</button><button class="btn" id="cQ">+ Domanda</button></div>
- <h3 style="margin-top:18px">Domande (${qs.length})</h3>${qs.length?`<div class="list">${qs.map(q=>`<div class="it" data-q="${q.id}"><div class="g">${esc(q.q)}<small>${boxLabel(q)}</small></div></div>`).join('')}</div>`:'<p class="mut" style="font-size:14px;margin:0">Ancora nessuna. Aggiungine una o importale dal tutor.</p>'}
- <h3 style="margin-top:18px">Righe scritte a memoria (${rec.length})</h3>${rec.length?rec.slice(0,15).map(s=>`<div class="reveal"><small class="mut">${dShort(s.start)}</small>\n${esc(s.note)}</div>`).join(''):'<p class="mut" style="font-size:14px;margin:0">Compariranno qui dopo ogni pausa con richiamo.</p>'}
- <div class="btns"><button class="btn" id="cX">Chiudi</button></div>`);
- const keep=()=>{const v=$('#cT');if(v&&v.value.trim()!==c.title){c.title=v.value.trim();save()}};
- onClose=()=>{refreshViews()};
- sheet.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{const i=+b.dataset.s;if(i===c.state)return;logEv({type:'state',ch:n,from:c.state,to:i});c.state=i;save();sheet.querySelectorAll('[data-s]').forEach(x=>x.classList.toggle('on',x===b));if(i===3)toast('🌟 Capitolo fissato!');else if(i===1)toast('Capitolo letto 📖')});
- $('#cGo').onclick=()=>{keep();y.curCh=n;if(y.tag)T().tag=y.tag;save();onClose=null;closeModal();go('timer');render();toast(chName(n))};
- $('#cQ').onclick=()=>{keep();onClose=null;qEdit(null,n,()=>chapterSheet(n))};
- sheet.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{keep();onClose=null;qEdit(b.dataset.q,n,()=>chapterSheet(n))});
- $('#cX').onclick=()=>{keep();closeModal()};
- $('#cT').onchange=keep;
-}
-function qEdit(id,ch,back){
- const y=Y(),q=id?y.questions.find(x=>x.id===id):null;if(id&&!q)return;
- const cc=q?q.ch:(ch||y.curCh);
- openModal(`<h3>${q?'Modifica domanda':'Nuova domanda d\'esame'}</h3>
- <div class="field"><label>Capitolo</label><select id="qC">${y.chapters.map(c=>`<option value="${c.n}" ${c.n===cc?'selected':''}>${esc(chName(c.n))}</option>`).join('')}</select></div>
- <div class="field"><label>Domanda</label><textarea id="qQ" class="note" placeholder="es. Descrivi il potenziale d'azione e le sue fasi">${q?esc(q.q):''}</textarea></div>
- <div class="field"><label>Appunti per la risposta (facoltativo)</label><textarea id="qA" class="note" placeholder="I punti chiave da ritrovare nella risposta">${q?esc(q.a||''):''}</textarea></div>
- ${q?`<p class="mut" style="font-size:13px;margin:0">${boxLabel(q)}</p>`:''}
- <div class="btns">${q?'<button class="btn dan" id="qD">Elimina</button>':'<button class="btn" id="qX">Annulla</button>'}<button class="btn pri" id="qS">Salva</button></div>`);
- const done=()=>{closeModal();if(back)back();else refreshViews()};
- if(q)$('#qD').onclick=()=>{y.questions=y.questions.filter(x=>x.id!==id);save();toast('Domanda eliminata');done()};else $('#qX').onclick=done;
- $('#qS').onclick=()=>{const t=$('#qQ').value.trim();if(!t){toast('Scrivi la domanda');return}
-  const o=q||{id:uid(),box:0,due:midnight(Date.now()),created:Date.now()};Object.assign(o,{ch:+$('#qC').value,q:t,a:$('#qA').value.trim()});
-  if(!q)y.questions.push(o);save();toast(q?'Domanda aggiornata':'Domanda aggiunta: in ripasso da oggi');done()};
-}
-function qImport(){
- const y=Y(),req=`Scrivimi 8 domande d'esame aperte sul capitolo ${y.curCh} di ${y.examName}, come quelle dello scritto (3 domande aperte). Formato: una per riga, «${y.curCh}: domanda | punti chiave della risposta». Nessun altro testo.`;
- openModal(`<h3>Importa domande</h3><p class="mut" style="font-size:14px;margin:0 0 8px">Una per riga, col numero del capitolo davanti. Gli appunti, se ci sono, dopo la barra verticale:<br><code>7: Descrivi il potenziale d'azione | soglia, depolarizzazione…</code></p>
- <button class="btn" id="qiReq" style="width:100%;margin-bottom:8px">📋 Copia la richiesta per il tutor</button>
- <textarea id="qi" class="note" style="min-height:170px" placeholder="Incolla qui le domande"></textarea><div class="btns"><button class="btn" id="qiX">Annulla</button><button class="btn pri" id="qiG">Importa</button></div>`);
- $('#qiReq').onclick=()=>navigator.clipboard.writeText(req).then(()=>toast('Richiesta copiata: incollala al tutor'),()=>toast('Copia non riuscita'));
- $('#qiX').onclick=closeModal;
- $('#qiG').onclick=()=>{
-  const max=y.chapters.length;let n=0;
-  $('#qi').value.split('\n').forEach(line=>{
-   let s=line.trim().replace(/^[-*•]\s*/,'');if(!s)return;let ch=y.curCh;
-   const m=s.match(/^(?:cap(?:itolo)?\.?\s*)?(\d{1,2})\s*[:.)\-–]\s*(.+)$/i);if(m){ch=Math.min(max,Math.max(1,+m[1]));s=m[2]}
-   const [qq,...rest]=s.split('|');if(!qq.trim())return;
-   y.questions.push({id:uid(),ch,q:qq.trim(),a:rest.join('|').trim(),box:0,due:midnight(Date.now()),created:Date.now()});n++;
-  });
-  if(!n){toast('Nessuna domanda trovata');return}
-  save();closeModal();refreshViews();toast(n+(n===1?' domanda importata':' domande importate'));
- };
-}
-function reviewRun(list){
- list=list||dueQs().sort((a,b)=>a.box-b.box||a.due-b.due);
- if(!list.length){toast('Nessuna domanda in scadenza 🎉');return}
- let i=0;const res=[0,0,0];
- const show=()=>{
-  if(i>=list.length||!list[i]){const tot=res[0]+res[1]+res[2];openModal(`<h3>Ripasso finito 🐟</h3><p class="mut">${tot} ${tot===1?'domanda':'domande'}: ${res[2]} sapute, ${res[1]} così così, ${res[0]} da rivedere domani.</p><div class="btns"><button class="btn pri" id="rvOk">Chiudi</button></div>`);$('#rvOk').onclick=closeModal;onClose=refreshViews;save();return}
-  const q=list[i];
-  openModal(`<div class="hdr" style="margin:0"><span class="mut" style="font-weight:700">${i+1}/${list.length} · ${esc(chName(q.ch))}</span><button class="chip" id="rvEnd">Fine</button></div><div class="qcard">${esc(q.q)}</div><textarea class="note" id="rvA" placeholder="Rispondi a memoria, anche per punti…"></textarea><div id="rvR"></div><button class="btn pri" id="rvShow" style="width:100%;margin-top:10px">Confronta con gli appunti</button>`);
-  sheet.dataset.lock='1';
-  $('#rvEnd').onclick=()=>{i=list.length;show()};
-  $('#rvShow').onclick=()=>{$('#rvShow').remove();
-   $('#rvR').innerHTML=`<div class="reveal">${q.a?esc(q.a):'<span class="mut">Nessun appunto salvato: confronta col libro.</span>'}</div><p class="mut" style="margin:6px 0 0;font-size:14px">Com'è andata?</p><div class="grade"><button class="btn" data-g="0">Non la sapevo</button><button class="btn" data-g="1">Così così</button><button class="btn pri" data-g="2">La sapevo</button></div>`;
-   sheet.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{const g=+b.dataset.g;gradeQ(q,g);res[g]++;save();i++;show()})};
- };
- show();
-}
-function pickSim(){
- const qs=[...Y().questions];if(qs.length<=3)return qs;
- const sorted=qs.map(q=>[Math.random()*(1+INT.length-q.box),q]).sort((a,b)=>b[0]-a[0]).map(x=>x[1]);
- const out=[],used=new Set();for(const q of sorted){if(!used.has(q.ch)){out.push(q);used.add(q.ch)}if(out.length===3)break}
- for(const q of sorted){if(out.length===3)break;if(!out.includes(q))out.push(q)}
- return out;
-}
-let simT=null;
-function simRun(){
- const qs=pickSim();if(qs.length<3){toast('Servono almeno 3 domande in archivio');return}
- const dur=Y().simMin*60,t0=Date.now(),end=t0+dur*1000;
- openModal(`<div class="simtime"><span>🧪 Simulazione</span><span id="simClock">${fmt(dur)}</span></div><p class="mut" style="font-size:14px;margin:2px 0 6px">3 domande aperte, ${Y().simMin} minuti. Libro chiuso, come all'esame.</p>
- ${qs.map((q,k)=>`<div class="field"><label>${k+1}. ${esc(chName(q.ch))}</label><div class="qcard" style="font-size:16px;margin-top:0">${esc(q.q)}</div><textarea class="note" data-k="${k}" style="min-height:150px" placeholder="La tua risposta"></textarea></div>`).join('')}
- <div class="btns"><button class="btn dan" id="simQuit">Abbandona</button><button class="btn pri" id="simDone">Consegna</button></div>`);
- sheet.dataset.lock='1';
- let over=false;
- const finish=()=>{if(over)return;over=true;clearInterval(simT);const a=[...sheet.querySelectorAll('textarea[data-k]')].map(x=>x.value.trim());simReview(qs,a,Math.round((Date.now()-t0)/1000))};
- clearInterval(simT);simT=setInterval(()=>{const c=$('#simClock');if(!c||!modal.classList.contains('on')){clearInterval(simT);return}const l=(end-Date.now())/1000;c.textContent=fmt(l);if(l<=0){if(S.settings.chime){ensureAudio();chime()}toast('Tempo scaduto: consegna');finish()}},500);
- $('#simDone').onclick=finish;
- let quitArm=0;
- $('#simQuit').onclick=e=>{const b=e.currentTarget;if(Date.now()-quitArm<4000){over=true;clearInterval(simT);closeModal();toast('Simulazione abbandonata');return}quitArm=Date.now();b.textContent='Tocca ancora: perdi le risposte';setTimeout(()=>{if(b.isConnected)b.textContent='Abbandona'},4000)};
-}
-function simReview(qs,ans,used){
- const gs=qs.map(()=>null);
- openModal(`<h3>Correzione 🧪</h3><p class="mut" style="margin:0 0 6px;font-size:14px">Tempo usato: ${fmtMin(Math.max(1,Math.round(used/60)))}. Confronta ogni risposta con gli appunti e valutala.</p>
- ${qs.map((q,k)=>`<div class="card" style="background:var(--track);box-shadow:none;padding:14px"><b>${k+1}. ${esc(q.q)}</b><p class="mut" style="font-size:13px;margin:2px 0 6px">${esc(chName(q.ch))}</p><span class="lab">La tua risposta</span><div style="white-space:pre-wrap;font-size:15px;margin-bottom:6px">${ans[k]?esc(ans[k]):'<span class="mut">(vuota)</span>'}</div><div class="reveal" style="background:var(--card)">${q.a?esc(q.a):'<span class="mut">Nessun appunto: confronta col libro.</span>'}</div><div class="grade" data-k="${k}">${GR.map((l,g)=>`<button class="btn" style="background:var(--card)" data-g="${g}">${l}</button>`).join('')}</div></div>`).join('')}
- <div class="btns"><button class="btn pri" id="srS">Salva la simulazione</button></div>`);
- sheet.dataset.lock='1';
- sheet.querySelectorAll('.grade').forEach(gr=>gr.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{gs[+gr.dataset.k]=+b.dataset.g;gr.querySelectorAll('[data-g]').forEach(x=>x.classList.toggle('on',x===b))}));
- $('#srS').onclick=()=>{
-  if(gs.some(g=>g==null)){toast('Valuta tutte e 3 le risposte');return}
-  const sim={id:uid(),ts:Date.now(),used,items:qs.map((q,k)=>({qid:q.id,ch:q.ch,q:q.q,ans:ans[k],g:gs[k]}))};
-  Y().sims.push(sim);qs.forEach((q,k)=>gradeQ(q,gs[k],{sim:sim.id}));save();closeModal();refreshViews();
-  const ok=gs.filter(g=>g===2).length;toast(ok===3?'3 su 3: tonno da esame! 🐟':ok+' su 3 sapute');
- };
 }
 function studyConfig(){
  const y=Y();let pw=y.perWeek;
  openModal(`<h3>Impostazioni dello studio</h3>
  <div class="field"><label>Esame</label><input type="text" id="scN" maxlength="60" value="${esc(y.examName)}"></div>
- <div class="g2"><div class="field"><label>Data esame</label><input type="date" id="scD" value="${esc(y.examDate)}"></div><div class="field"><label>Inizio del piano</label><input type="date" id="scS" value="${dayKey(y.start)}"></div></div>
- <div class="g2"><div class="field"><label>Capitoli</label><input type="number" id="scC" min="1" max="60" value="${y.chapters.length}" inputmode="numeric"></div><div class="field"><label>Simulazione (min)</label><input type="number" id="scM" min="10" max="240" value="${y.simMin}" inputmode="numeric"></div></div>
+ <div class="g2"><div class="field"><label>Data esame</label><input type="date" id="scD" value="${esc(y.examDate)}"></div><div class="field"><label>Inizio delle promesse</label><input type="date" id="scS" value="${dayKey(y.start)}"></div></div>
+ <p class="mut" style="font-size:12px;margin:-4px 0 8px">Esame e data si aggiornano anche quando ricevi dal Tracker.</p>
  <div class="field"><label>Tag delle sessioni di studio</label><select id="scT"><option value="">Nessuno</option>${S.tags.map(g=>`<option value="${g.id}" ${g.id===y.tag?'selected':''}>${esc(g.name)}</option>`).join('')}</select></div>
  <div class="set" style="border:0"><div>Sere di studio a settimana<small>Le promesse da mantenere</small></div><div class="step"><button id="pwM">−</button><b id="pwV">${pw}</b><button id="pwP">+</button></div></div>
  <div class="btns"><button class="btn" id="scX">Annulla</button><button class="btn pri" id="scO">Salva</button></div>`);
  $('#pwM').onclick=()=>{pw=Math.max(1,pw-1);$('#pwV').textContent=pw};$('#pwP').onclick=()=>{pw=Math.min(7,pw+1);$('#pwV').textContent=pw};
  $('#scX').onclick=closeModal;
  $('#scO').onclick=()=>{
-  const d=$('#scD').value,s=new Date($('#scS').value+'T00:00').getTime(),n=Math.min(60,Math.max(1,+$('#scC').value||19));
+  const d=$('#scD').value,s=new Date($('#scS').value+'T00:00').getTime();
   if(!d){toast('Inserisci la data dell\'esame');return}
-  y.examName=$('#scN').value.trim()||'Esame';y.examDate=d;if(!isNaN(s))y.start=s;y.simMin=Math.min(240,Math.max(10,+$('#scM').value||60));
-  y.tag=$('#scT').value||null;y.perWeek=pw;if(n!==y.chapters.length)y.chapters=mkChapters(n,y.chapters);
-  ensureStudy();save();closeModal();refreshViews();toast('Piano aggiornato');
+  y.examName=$('#scN').value.trim()||'Esame';y.examDate=d;if(!isNaN(s))y.start=s;y.tag=$('#scT').value||null;y.perWeek=pw;
+  ensureStudy();save();closeModal();refreshViews();toast('Impostazioni salvate');
  };
 }
 
 /* diario per il tutor */
 function diaryDays(){
  const set=new Set([dayKey(Date.now())]),from=addDays(midnight(Date.now()),-30);
- S.sessions.forEach(s=>{if(isStudy(s)&&s.start>=from)set.add(dayKey(s.start))});Y().log.forEach(e=>{if(e.ts>=from)set.add(dayKey(e.ts))});
+ S.sessions.forEach(s=>{if(isStudy(s)&&s.start>=from)set.add(dayKey(s.start))});
  return [...set].sort().reverse();
 }
 function diaryText(dk){
- const a=new Date(dk+'T00:00').getTime(),b=addDays(a,1),y=Y(),P=pace(),W=promiseWeeks(1)[0];
- const ses=S.sessions.filter(s=>isStudy(s)&&s.start>=a&&s.start<b).sort((x,z)=>x.start-z.start),ev=y.log.filter(e=>e.ts>=a&&e.ts<b);
- const done=ses.filter(s=>!s.abandoned),min=Math.round(ses.reduce((x,s)=>x+s.dur,0)/60);
- const hm=ts=>{const d=new Date(ts);return pad(d.getHours())+':'+pad(d.getMinutes())},one=s=>s.replace(/\s*\n\s*/g,' / ');
+ const a=new Date(dk+'T00:00').getTime(),b=addDays(a,1),y=Y(),W=promiseWeeks(1)[0],tr=y.tracker;
+ const ses=S.sessions.filter(s=>isStudy(s)&&s.start>=a&&s.start<b).sort((x,z)=>x.start-z.start);
+ const done=ses.filter(s=>!s.abandoned),min=Math.round(ses.reduce((x,s)=>x+s.dur,0)/60),one=s=>s.replace(/\s*\n\s*/g,' / ');
  const L=['# Diario di studio · '+new Date(a).toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'}),
-  'Esame: '+y.examName+' · '+dLong(examTs())+' · mancano '+P.left+' giorni'];
+  'Esame: '+y.examName+' · '+dLong(examTs())+' · mancano '+daysLeft()+' giorni'];
  if(y.ratings[dk])L.push('Utilità percepita della serata: '+y.ratings[dk]+'/5');
  L.push('','## Sessioni');
  if(!ses.length)L.push('- Nessuna sessione di studio');
  else{L.push(`Totale: ${done.length} completate, ${ses.length-done.length} interrotte, ${fmtMin(min)}`);
   ses.forEach(s=>{L.push(`- ${hm(s.start)} · ${fmtShort(s.dur)} · ${s.ch?chName(s.ch):'capitolo non indicato'}${s.mini?' · scatoletta piccola':''}${s.abandoned?' · interrotta':''}`);if(s.note)L.push('  - '+(s.recall?'Scritto a memoria: ':'Nota: ')+one(s.note))})}
- const rv=ev.filter(e=>e.type==='review'&&!e.sim);
- if(rv.length){L.push('','## Ripasso domande ('+rv.length+')');rv.forEach(e=>{const q=y.questions.find(x=>x.id===e.qid);L.push(`- ${chName(e.ch)} · «${q?q.q:'domanda eliminata'}» → ${GR[e.g]}`)})}
- y.sims.filter(s=>s.ts>=a&&s.ts<b).forEach(sm=>{L.push('','## Simulazione d\'esame · '+hm(sm.ts)+' · '+fmtMin(Math.max(1,Math.round(sm.used/60))));sm.items.forEach((it,k)=>{L.push(`${k+1}. ${chName(it.ch)} · «${it.q}» → ${GR[it.g]}`);L.push('   Risposta: '+(it.ans?one(it.ans):'(vuota)'))})});
- L.push('','## Scaffale');
- ev.filter(e=>e.type==='state').forEach(e=>L.push(`- ${chName(e.ch)}: ${ST_NAMES[e.from]} → ${ST_NAMES[e.to]}`));
- L.push(`- Stato: ${P.read}/${y.chapters.length} letti · ${P.rev} ripassati · ${P.write} so scrivere · ${paceStatus(P).replace(/^\S+\s/,'')}`);
- L.push(`- Domande: ${y.questions.length} in archivio, ${dueQs().length} in scadenza oggi`);
- if(y.bait)L.push('','## Esca per la prossima volta','- '+y.bait+' ('+chName(y.baitCh)+')');
+ if(tr&&dayKey(tr.got)===dk){
+  L.push('','## Piano dal Tracker');
+  if(tr.week)L.push('- Settimana '+tr.week.n+': '+tr.week.t);
+  if(tr.book)L.push('- '+tr.book.st+' · libro '+tr.book.done+'/'+tr.book.tot+(tr.pace?' · '+tr.pace:''));
+  const rd=(tr.rich||[]).filter(r=>r.due&&r.due<=dk);
+  if(rd.length){L.push('- Richiami in scadenza: '+rd.length);rd.forEach(r=>L.push(`  - ${(tr.doneIds||[]).includes(r.id)?'[fatto]':'[da fare]'} ${r.t}`))}
+ }
+ if(y.bait)L.push('','## Esca per la prossima volta','- '+y.bait+(y.bait!==chName(y.baitCh)?' ('+chName(y.baitCh)+')':''));
  L.push('','## Promesse',`- Questa settimana: ${W?W.c:0}/${y.perWeek} sere · serie: ${weekStreak()} settimane · tonno: ${level().name}`);
  return L.join('\n');
 }
@@ -1312,7 +1238,7 @@ $('#tagBtn').onclick=tagSheet;
 $('#soundBtn').onclick=soundSheet;
 $('#miniBtn').onclick=startMini;
 $('#chBtn').onclick=chPick;
-$('#dueBtn').onclick=()=>reviewRun();
+$('#dueBtn').onclick=()=>go('study');
 $('#zenBtn').onclick=()=>{document.body.classList.toggle('zen');$('#zenBtn span').textContent=document.body.classList.contains('zen')?'Esci':'Modalità focus'};
 $$('#modeSeg button').forEach(b=>b.onclick=()=>{const t=T();if(b.dataset.mode===t.mode)return;if(t.running||focusElapsed()>0){toast('Interrompi prima la sessione in corso');return}t.mode=b.dataset.mode;t.acc=0;setPhase('focus');save();render()});
 $$('#phases button').forEach(b=>b.onclick=()=>{const t=T();if(b.dataset.p===t.phase)return;if(t.running){toast('Metti in pausa per cambiare fase');return}setPhase(b.dataset.p);save();render()});
