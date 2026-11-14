@@ -343,7 +343,7 @@ const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const K='tonnetto-v1';
 const PAL=['#e8463a','#2a78c2','#5f9a3a','#e9a320','#8a63c9','#ec6f86','#1f9e94','#64788d'];
 const DEF={
- settings:{focus:25,short:5,long:30,every:4,ritual:true,autoBreak:true,autoFocus:false,chime:true,vibrate:true,notify:false,wake:true,theme:'auto',goal:120,volume:.5,sound:'none',askNote:true,iosTimer:false,scName:'Tonnetto',pushOn:false,pushSub:null,pushRun:null,pushKey:null,mini:10,recall:true},
+ settings:{focus:25,short:5,long:30,every:4,ritual:true,autoBreak:true,autoFocus:false,chime:true,vibrate:true,notify:false,wake:true,theme:'auto',goal:120,volume:.5,sound:'none',askNote:true,iosTimer:false,scName:'Tonnetto',pushOn:false,pushSub:null,pushRun:null,pushKey:null,mini:10,recall:true,iconBadge:true},
  study:{examName:'Psicobiologia del comportamento umano',examDate:'2027-03-15',start:null,perWeek:3,tag:'t2',chapters:mkChapters(19),bait:'',baitCh:1,curCh:1,questions:[],sims:[],log:[],ratings:{},simMin:60},
  tags:[{id:'t1',name:'Lavoro',color:PAL[0]},{id:'t2',name:'Studio',color:PAL[1]},{id:'t3',name:'Lettura',color:PAL[2]},{id:'t4',name:'Scrittura',color:PAL[3]}],
  sessions:[],
@@ -865,14 +865,14 @@ function renderSettings(){
  const notifState='Notification'in window?Notification.permission:'unsupported';
  $('#v-set').innerHTML=`<h2>Impostazioni</h2>
  <div class="card">${step('focus','Durata focus')}${step('short','Pausa breve')}${step('long','Pausa lunga')}${step('every','Pausa lunga ogni','sessioni di focus')}${step('goal','Obiettivo giornaliero')}${step('mini','Scatoletta piccola','Per le serate no: poi decidi se continuare')}</div>
- <div class="card">${sw('autoBreak','Avvia pausa in automatico')}${sw('autoFocus','Avvia focus dopo la pausa')}${sw('chime','Suono di fine sessione')}${sw('vibrate','Vibrazione','Solo sui dispositivi che la supportano')}${sw('wake','Schermo sempre acceso','Durante il timer')}${sw('ritual','Rituale prima del focus','Posto tranquillo, via le distrazioni, un solo compito. A inizio ciclo')}${sw('askNote','Nota a fine sessione','Scrivi com\'è andata')}${sw('recall','Pausa con richiamo','Per le sessioni di studio: 3 righe a memoria e l\'esca prima della pausa')}<div class="set"><div>Avvisi a telefono bloccato<small>Fine focus e fine pausa, anche con l'app chiusa, senza uscire dall'app</small></div><label class="sw"><input type="checkbox" id="pushSw" ${s.pushOn?'checked':''}><span></span></label></div>${s.pushOn?'<div class="set"><div>Prova gli avvisi<small>Arriva una notifica tra 10 secondi</small></div><button class="chip" id="pushTest">Prova</button></div>':''}
+ <div class="card">${sw('autoBreak','Avvia pausa in automatico')}${sw('autoFocus','Avvia focus dopo la pausa')}${sw('chime','Suono di fine sessione')}${sw('vibrate','Vibrazione','Solo sui dispositivi che la supportano')}${sw('wake','Schermo sempre acceso','Durante il timer')}${sw('ritual','Rituale prima del focus','Posto tranquillo, via le distrazioni, un solo compito. A inizio ciclo')}${sw('askNote','Nota a fine sessione','Scrivi com\'è andata')}${sw('iconBadge','Numero sull\'icona','Domande in scadenza sull\'icona di Tonnetto. Serve il permesso per le notifiche')}${sw('recall','Pausa con richiamo','Per le sessioni di studio: 3 righe a memoria e l\'esca prima della pausa')}<div class="set"><div>Avvisi a telefono bloccato<small>Fine focus e fine pausa, anche con l'app chiusa, senza uscire dall'app</small></div><label class="sw"><input type="checkbox" id="pushSw" ${s.pushOn?'checked':''}><span></span></label></div>${s.pushOn?'<div class="set"><div>Prova gli avvisi<small>Arriva una notifica tra 10 secondi</small></div><button class="chip" id="pushTest">Prova</button></div>':''}
   <div class="set"><div>Notifiche<small>${notifState==='granted'?'Attive':notifState==='denied'?'Bloccate dal browser':notifState==='unsupported'?'Su iPhone: aggiungi Tonnetto alla schermata Home':'Non ancora autorizzate'}</small></div>${notifState==='granted'?`<label class="sw"><input type="checkbox" data-sw="notify" ${s.notify?'checked':''}><span></span></label>`:notifState==='default'?'<button class="chip" id="askN">Autorizza</button>':''}</div>
   <div class="set"><div>Tema</div><div class="seg sm" id="thm">${[['auto','Auto'],['light','Chiaro'],['dark','Scuro']].map(([k,l])=>`<button data-t="${k}" class="${s.theme===k?'on':''}">${l}</button>`).join('')}</div></div>
  </div>
  <div class="card"><h3>Dati</h3><p class="mut" style="font-size:13px;margin:0 0 6px">Restano solo in questo browser. Esporta per fare un backup o spostarli su un altro dispositivo.</p><div class="btns" style="margin-top:8px"><button class="btn" id="exp">Esporta</button><button class="btn" id="imp">Importa</button><button class="btn dan" id="wipe">Azzera</button></div></div>
  <p class="mut" style="text-align:center;font-size:12px">Tonnetto · tutte le funzioni incluse, nessun abbonamento</p>`;
  $$('[data-st]').forEach(b=>b.onclick=()=>{const k=b.dataset.st,[mn,mx,st]=STEPS[k];s[k]=Math.min(mx,Math.max(mn,s[k]+st*+b.dataset.d));save();renderSettings();render()});
- $$('[data-sw]').forEach(i=>i.onchange=()=>{s[i.dataset.sw]=i.checked;save();if(i.dataset.sw==='wake'){i.checked&&T().running?wakeOn():wakeOff()}if(i.dataset.sw==='iosTimer')renderSettings()});
+ $$('[data-sw]').forEach(i=>i.onchange=()=>{s[i.dataset.sw]=i.checked;save();if(i.dataset.sw==='iconBadge'){lastBadge=null;iconBadge();if(i.checked&&'Notification'in window&&Notification.permission==='default')Notification.requestPermission().then(()=>{lastBadge=null;iconBadge();renderSettings()}).catch(()=>{})}if(i.dataset.sw==='wake'){i.checked&&T().running?wakeOn():wakeOff()}if(i.dataset.sw==='iosTimer')renderSettings()});
  const psw=$('#pushSw');if(psw)psw.onchange=async()=>{if(psw.checked){const ok=await enablePush();if(!ok)psw.checked=false;else toast('Avvisi attivi')}else disablePush();renderSettings()};
  const pt=$('#pushTest');if(pt)pt.onclick=testPush;
  $$('#thm button').forEach(b=>b.onclick=()=>{s.theme=b.dataset.t;save();applyTheme();renderSettings()});
@@ -961,6 +961,14 @@ function renderStudyBits(){
  $('#chBtn').style.display=y.tag&&t.tag===y.tag&&t.mode==='pomo'?'':'none';$('#chBtn span').textContent='Cap. '+y.curCh;
  const d=dueQs().length;$('#dueBtn').style.display=d&&!t.running?'':'none';$('#dueBtn span').textContent=d+(d===1?' domanda':' domande');
  const nb=$('#dueBadge');nb.textContent=d>99?'99+':d;nb.classList.toggle('on',d>0);
+ iconBadge(d);
+}
+// numero sull'icona dell'app (schermata Home): domande in scadenza oggi
+let lastBadge=null;
+function iconBadge(d){
+ if(d==null)d=dueQs().length;if(!S.settings.iconBadge)d=0;
+ if(d===lastBadge||!('setAppBadge'in navigator))return;lastBadge=d;
+ (d>0?navigator.setAppBadge(d):navigator.clearAppBadge()).catch(()=>{lastBadge=null});
 }
 function baitStart(){
  const t=T(),y=Y();if(t.running)return;
@@ -1309,7 +1317,7 @@ $('#zenBtn').onclick=()=>{document.body.classList.toggle('zen');$('#zenBtn span'
 $$('#modeSeg button').forEach(b=>b.onclick=()=>{const t=T();if(b.dataset.mode===t.mode)return;if(t.running||focusElapsed()>0){toast('Interrompi prima la sessione in corso');return}t.mode=b.dataset.mode;t.acc=0;setPhase('focus');save();render()});
 $$('#phases button').forEach(b=>b.onclick=()=>{const t=T();if(b.dataset.p===t.phase)return;if(t.running){toast('Metti in pausa per cambiare fase');return}setPhase(b.dataset.p);save();render()});
 document.addEventListener('keydown',e=>{if(e.target.matches('input,textarea,select'))return;if(e.code==='Space'){e.preventDefault();T().running?pause():start()}});
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){tick();if(T().running||isBlack())wakeOn(true)}else save()});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){tick();renderStudyBits();if(T().running||isBlack())wakeOn(true)}else{save();lastBadge=null;iconBadge()}});
 /* schermo nero */
 let boT=null,lastTap=0;
 function boPeek(){const b=$('#blackout');b.classList.add('peek');clearTimeout(boT);boT=setTimeout(()=>b.classList.remove('peek'),2500)}

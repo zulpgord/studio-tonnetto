@@ -20,6 +20,7 @@ Timer Pomodoro a tema tonno in scatola. Gratis, senza account, i dati restano su
 - **Pausa con richiamo**: dopo ogni focus di studio, 3 righe scritte a memoria prima della pausa
 - **Scaffale** dei capitoli (chiusa → letta → ripassata → la so scrivere) con il ritmo necessario per arrivare all'esame
 - **Domande in scadenza**: ripasso distanziato a 1, 3, 7, 14 e 30 giorni, importazione dal tutor, simulazione d'esame a 3 domande aperte
+- **Numero sull'icona**: le domande in scadenza compaiono sull'icona dell'app (serve il permesso per le notifiche)
 - **Diario per il tutor**: riepilogo della serata da copiare o condividere
 - **Promesse mantenute** (sere fatte rispetto a quelle previste, con una sera di tolleranza) e un tonno che cresce con le sessioni
 
