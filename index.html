@@ -463,8 +463,11 @@ async function resetFlow(){
 let AC=null,master=null,amb=null;const bufs={};
 function ensureAudio(){
  try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(e){}
+ // iOS può chiudere il contesto audio: in quel caso lo ricreo da zero
+ if(AC&&AC.state==='closed'){AC=null;master=null;amb=null;for(const k in bufs)delete bufs[k]}
  if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)();master=AC.createGain();master.connect(AC.destination)}catch(e){}}
- if(AC&&AC.state==='suspended')AC.resume().catch(()=>{});
+ // Safari mette il contesto in "interrupted" (non solo "suspended") quando l'app va in secondo piano
+ if(AC&&AC.state!=='running')AC.resume().catch(()=>{});
 }
 function noise(kind){
  if(bufs[kind])return bufs[kind];
@@ -510,7 +513,7 @@ function stopAmbient(){
  setTimeout(()=>{a.nodes.forEach(x=>{try{x.stop()}catch(e){}});try{a.out.disconnect()}catch(e){}},500);
 }
 function chime(){
- if(!AC)return;if(AC.state==='suspended')AC.resume().catch(()=>{});const t0=AC.currentTime;
+ if(!AC)return;if(AC.state!=='running')AC.resume().catch(()=>{});const t0=AC.currentTime;
  [0,1.4,2.8].flatMap(r=>[[523.25,r],[659.25,r+.16],[783.99,r+.32],[1046.5,r+.5]]).forEach(([f,d])=>{const o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(0,t0+d);g.gain.linearRampToValueAtTime(.45,t0+d+.02);g.gain.exponentialRampToValueAtTime(.001,t0+d+1.4);o.connect(g);g.connect(AC.destination);o.start(t0+d);o.stop(t0+d+1.5)});
 }
 function alertEnd(prev,mini){
@@ -1243,7 +1246,7 @@ $('#zenBtn').onclick=()=>{document.body.classList.toggle('zen');$('#zenBtn span'
 $$('#modeSeg button').forEach(b=>b.onclick=()=>{const t=T();if(b.dataset.mode===t.mode)return;if(t.running||focusElapsed()>0){toast('Interrompi prima la sessione in corso');return}t.mode=b.dataset.mode;t.acc=0;setPhase('focus');save();render()});
 $$('#phases button').forEach(b=>b.onclick=()=>{const t=T();if(b.dataset.p===t.phase)return;if(t.running){toast('Metti in pausa per cambiare fase');return}setPhase(b.dataset.p);save();render()});
 document.addEventListener('keydown',e=>{if(e.target.matches('input,textarea,select'))return;if(e.code==='Space'){e.preventDefault();T().running?pause():start()}});
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){tick();renderStudyBits();if(T().running||isBlack())wakeOn(true)}else{save();lastBadge=null;iconBadge()}});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){tick();renderStudyBits();reviveAmbient(false);if(T().running||isBlack())wakeOn(true)}else{save();lastBadge=null;iconBadge()}});
 /* schermo nero */
 let boT=null,lastTap=0;
 function boPeek(){const b=$('#blackout');b.classList.add('peek');clearTimeout(boT);boT=setTimeout(()=>b.classList.remove('peek'),2500)}
@@ -1253,7 +1256,16 @@ $('#blackout').addEventListener('pointerup',e=>{e.preventDefault();const n=Date.
 $('#blackBtn').onclick=blackOn;
 $('#alOk').onclick=hideAlarm;
 $('#alarm').addEventListener('click',e=>{if(e.target.id==='alarm')hideAlarm()});
-document.addEventListener('pointerdown',()=>{if(T().running&&!amb){ensureAudio();playAmbient()}},{once:true});
+/* suono di sottofondo: se iOS l'ha fermato (app in secondo piano, schermo bloccato, chiamata) lo riavvio */
+const wantsAmbient=()=>{const t=T();return t.running&&S.settings.sound!=='none'&&!(t.mode==='pomo'&&t.phase!=='focus')};
+function reviveAmbient(fromTap){
+ if(!wantsAmbient())return;
+ const was=AC?AC.state:'none';ensureAudio();if(!AC)return;
+ if(was==='running'&&amb)return;
+ AC.resume().then(()=>{if(wantsAmbient())playAmbient()}).catch(()=>{});
+ if(!fromTap)setTimeout(()=>{if(wantsAmbient()&&(!AC||AC.state!=='running'))toast('Tocca lo schermo per riattivare il suono 🎧')},700);
+}
+document.addEventListener('pointerdown',()=>reviveAmbient(true),{capture:true,passive:true});
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',applyTheme);
 
 load();
