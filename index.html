@@ -200,6 +200,15 @@ html,body{overflow-x:hidden}
 .taskline{font-size:15px;font-weight:700;color:var(--ink);text-align:center;max-width:300px;margin-bottom:-6px}
 .rit{display:flex;gap:12px;align-items:center;padding:11px 12px;border-radius:14px;background:var(--track);margin:8px 0;font-weight:600;font-size:15px}
 .rit input{width:22px;height:22px;accent-color:var(--cool);flex:none}
+.alarm{position:fixed;inset:0;z-index:70;display:none;align-items:center;justify-content:center;padding:24px;background:color-mix(in srgb,var(--ph) 85%,#000)}
+.alarm.on{display:flex;animation:alarmPulse 1.2s ease-in-out infinite alternate}
+@keyframes alarmPulse{to{background:color-mix(in srgb,var(--ph) 60%,#000)}}
+.alarm-in{background:var(--card);border-radius:28px;padding:26px 24px;text-align:center;max-width:340px;width:100%;box-shadow:0 20px 40px -12px #0008}
+.alarm-can{width:96px;height:96px;margin:0 auto 6px;animation:alarmWiggle .5s ease-in-out infinite alternate}
+.alarm-can svg{width:100%;height:100%}
+@keyframes alarmWiggle{from{transform:rotate(-8deg)}to{transform:rotate(8deg)}}
+.alarm-in h2{margin:4px 0 6px}.alarm-in p{color:var(--mut);margin:0 0 18px;font-size:16px}
+.alarm-in .btn{width:100%;font-size:18px;padding:14px}
 @media (orientation:landscape) and (max-height:560px){
  main{padding-top:8px;padding-bottom:84px}
  .stage{flex-direction:row;justify-content:center;gap:44px;margin-top:6px}
@@ -285,6 +294,7 @@ html,body{overflow-x:hidden}
 
 <div id="modal" class="modal"><div class="sheet" id="sheet"></div></div>
 <div id="toast"></div>
+<div id="alarm" class="alarm" role="alertdialog" aria-labelledby="alTitle"><div class="alarm-in"><div id="alCan" class="alarm-can"></div><h2 id="alTitle"></h2><p id="alBody"></p><button class="btn pri" id="alOk">Ok</button></div></div>
 <div id="blackout" class="blackout" aria-label="Schermo nero: doppio tocco per uscire"><div id="boTime"></div><p id="boHint">Doppio tocco per uscire</p></div>
 
 <script>
@@ -400,6 +410,7 @@ async function resetFlow(){
 /* ---------- ALERTS ---------- */
 let AC=null,master=null,amb=null;const bufs={};
 function ensureAudio(){
+ try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(e){}
  if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)();master=AC.createGain();master.connect(AC.destination)}catch(e){}}
  if(AC&&AC.state==='suspended')AC.resume().catch(()=>{});
 }
@@ -447,17 +458,30 @@ function stopAmbient(){
  setTimeout(()=>{a.nodes.forEach(x=>{try{x.stop()}catch(e){}});try{a.out.disconnect()}catch(e){}},500);
 }
 function chime(){
- if(!AC)return;const t0=AC.currentTime;
- [[523.25,0],[659.25,.16],[783.99,.32],[1046.5,.5]].forEach(([f,d])=>{const o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(0,t0+d);g.gain.linearRampToValueAtTime(.3,t0+d+.02);g.gain.exponentialRampToValueAtTime(.001,t0+d+1.4);o.connect(g);g.connect(AC.destination);o.start(t0+d);o.stop(t0+d+1.5)});
+ if(!AC)return;if(AC.state==='suspended')AC.resume().catch(()=>{});const t0=AC.currentTime;
+ [0,1.4,2.8].flatMap(r=>[[523.25,r],[659.25,r+.16],[783.99,r+.32],[1046.5,r+.5]]).forEach(([f,d])=>{const o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(0,t0+d);g.gain.linearRampToValueAtTime(.45,t0+d+.02);g.gain.exponentialRampToValueAtTime(.001,t0+d+1.4);o.connect(g);g.connect(AC.destination);o.start(t0+d);o.stop(t0+d+1.5)});
 }
 function alertEnd(prev){
  if(S.settings.chime)chime();
+ showAlarm(prev);
  if(S.settings.vibrate&&navigator.vibrate)try{navigator.vibrate([220,120,220])}catch(e){}
  if(S.settings.notify&&!S.settings.pushOn&&'Notification'in window&&Notification.permission==='granted'){
   const ti=prev==='focus'?'Focus completato 🐟':'Pausa terminata',op={body:prev==='focus'?'Tempo di una pausa.':'Pronto per il prossimo focus?',icon:'icon-512.png',badge:'icon-180.png',tag:'tonnetto'};
   if(navigator.serviceWorker&&navigator.serviceWorker.controller)navigator.serviceWorker.ready.then(r=>r.showNotification(ti,op)).catch(()=>{});else try{new Notification(ti,op)}catch(e){}
  }
 }
+let alarmT=null;
+function showAlarm(prev){
+ const a=$('#alarm');if(!a)return;
+ const nb=T().phase;
+ $('#alTitle').textContent=prev==='focus'?'Focus completato 🐟':'Pausa finita';
+ $('#alBody').textContent=prev==='focus'?(S.settings.autoBreak?PH[nb]+' iniziata: '+S.settings[nb]+' min.':'Tempo di una pausa.'):(S.settings.autoFocus?'Nuovo focus iniziato.':'Pronto per il prossimo focus?');
+ $('#alCan').innerHTML=canIcon(false);
+ a.classList.add('on');
+ let n=0;clearInterval(alarmT);
+ alarmT=setInterval(()=>{if(++n>3||!a.classList.contains('on')){clearInterval(alarmT);return}if(S.settings.chime)chime()},10000);
+}
+function hideAlarm(){clearInterval(alarmT);const a=$('#alarm');if(a)a.classList.remove('on')}
 let wl=null;
 async function wakeOn(force){if((!S.settings.wake&&!force&&!isBlack())||!('wakeLock'in navigator)||wl)return;try{wl=await navigator.wakeLock.request('screen');wl.addEventListener('release',()=>wl=null)}catch(e){}}
 function isBlack(){const b=document.getElementById('blackout');return!!b&&b.classList.contains('on')}
@@ -908,6 +932,8 @@ function blackOn(){$('#blackout').classList.add('on');document.querySelector('me
 function blackOff(){const b=$('#blackout');if(!b.classList.contains('on'))return;b.classList.remove('on','peek');applyTheme();if(!T().running)wakeOff()}
 $('#blackout').addEventListener('pointerup',e=>{e.preventDefault();const n=Date.now();if(n-lastTap<380){lastTap=0;blackOff();return}lastTap=n;boPeek()});
 $('#blackBtn').onclick=blackOn;
+$('#alOk').onclick=hideAlarm;
+$('#alarm').addEventListener('click',e=>{if(e.target.id==='alarm')hideAlarm()});
 document.addEventListener('pointerdown',()=>{if(T().running&&!amb){ensureAudio();playAmbient()}},{once:true});
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',applyTheme);
 
